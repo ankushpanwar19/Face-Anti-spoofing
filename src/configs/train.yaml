@@ -1,0 +1,255 @@
+debug: False  
+small_trainset: False  
+machine: 0
+multi_gpu: False
+resume: False     
+resume_checkpoint_path: ''
+resume_iteration: 0                                                    
+eval_at_first_iter: True
+set_seed: False
+exp_name_prefix: lstmmot_exp_001                                      
+
+num_workers: 2
+
+# --- Train options ---
+mute_cnn: False # if True, then CNN part is not trained
+mute_lstm: False
+option: 0
+# --- logger options ---
+snapshot_save_iter: 5000                                            
+eval_iter: 5000
+log_iter: 200
+const_testset: True
+
+scheduler:
+  lr_policy: PolynomialLR
+  # Define accordingly, e.g.
+  parameters:
+    max_iter: 100000
+    decay_iter: 1
+    gamma: 0.9
+
+# --- data options ---
+train_dataset: OuMsRa # Ou for Oulu, Ms for MSU, Ra for replay-attack, Ca for Casia   
+project_path: '' # this should be set by an argument
+out_train_dataset: 'DG_exp' # 'casia_replay_lstm_exp' or 'casia_replay_lstm_exp_ori'
+base_out_path: ''  # this will be set with an argument
+base_path_machine0: '/scratch_net/knuffi_third/susaha/apps/'  #* path to dataset directory
+
+protocol: 1                                                           
+split: 0
+sel_these_many: 0                                                     
+test_dataset: 'casia' # 'oulu-npu' #'replay-attack' #'msu'                                              
+eval_type1: 'OuMsRa2CasiaVal'
+eval_type2: 'OuMsRa2CasiaTest'
+
+eval2run: 'OuMsRa2Casia'
+
+
+strs2match: ['eval_anet']  
+
+trial: False 
+dadpnet_net_arch: 3        
+batch_size_debug: 10
+sel_these_many_debug: 100
+break_after_thesemany: 100
+
+# --- data options ---
+batch_size_lstm: 4 
+batch_size_cnn : 16
+reinit_resnet_fc: True
+resnet_loadmodel: 'imagenet'
+resnet_vggface_model: 0 
+resnet_arch: 50
+
+ClsCondDomainNet4Baseline:
+  # inp_dim: 32 
+  inp_dim: 1024                     
+  out_dim1: 32                    
+  loss_w: 1.0
+#  cost_func: softmax
+#  out_dim2: 512
+  dropoutv: 0.2
+
+ClsCondDomainNet:
+  inp_dim: 2048                   
+  out_dim1: 1024                 
+  loss_w: 1.0
+  dropoutv: 0.2
+
+ClsCondDomainNetHeads:
+  # inp_dim: 1024  
+  inp_dim: 32                    
+  out_dim1: 3                     
+  loss_w: 1.0
+  cost_func: softmax
+
+resent_clsnet:
+  inp_dim: 2048
+  out_dim1: 512
+  out_dim2: 2
+  loss_w: 1.0
+  dropoutv: 0.2
+  cost_func: softmax # softmax # or bce  if bce then set out_dim2=1
+
+optim:
+
+  set_da_lambda_constant: True
+
+  da_lambda_constant: 0.2
+
+  num_epoch: 100 # this is for computing the domain addaptation lambda -- small value will increase the da_labmda value quickly than a large vle so make it small i.e. 5
+  lr: 0.0003           
+  lr_policy: constant #step #da_lambda 
+  step_size: 30000  # this for lr_policy: step
+  gamma: 0.1      # # this for lr_policy: step
+  optim_type: sgd #adam #sgd
+  momentum: 0.9       # this is for sgd
+  weight_decay: 0.00001  # this is for both sgd and adam
+  beta1: 0.5                # this is for adam
+  beta2: 0.999              # this is for adam
+
+  weight_init: False
+  init: xavier       #  # gaussian, xavier, kaiming, orthogonal, default
+
+  gan_w: 1
+  recon_x_w: 10
+  recon_s_w: 1
+  recon_c_w: 1
+  recon_x_cyc_w: 0
+  vgg_w: 0
+
+  da_lr_schedule:
+    alpha: 10
+    beta: 0.75
+    gamma: 10
+
+
+app_feats: 0                                                       
+
+
+sep_convhead_anet:
+inp_dim: 128 
+res_dim: 32                      
+depth_map_size: 32           
+exp_desc: 'ResNet' 
+
+protos_splits:
+  oulu-npu: {1: [0], 2: [0], 3: [1, 2, 3, 4, 5, 6], 4: [1, 2, 3, 4, 5, 6]}
+  siw: {1: [0], 2: [1, 2, 3, 4], 3: [1, 2]}
+
+fusion_type: 2
+fusion_types: ['sum_fusion', 'mean_fusion', 'mult_fusion']
+
+load_model_version: 2        
+
+
+convhead:                 
+  input_dim: 384
+  input_dim2: 128 
+  num_kernels: 128
+  kernel_size: 3
+  stride: 1
+  padding: 1
+  norm: bn
+  activ: elu
+  pad_type: zero
+
+
+anet_clsnet:
+  inp_dim: 1024 
+  out_dim1: 256 
+  out_dim2: 2  
+  loss_w: 1.0
+  cost_func: softmax # softmax # or bce  if bce then set out_dim2=1  
+
+depnet:
+  deploss: 1                       
+  loss_w: 1.0
+  loss_w2: 1.0
+
+da_clsnet:
+  inp_dim: 256                      
+  out_dim1: 256                     
+  loss_w: 1.0
+  cost_func: bce
+  out_dim2: 1
+
+
+visualize: False
+#modality: RGB
+
+mode: train
+
+# --- model options ---
+gen:
+  input_dim: 3
+  num_kernels: 64
+  kernel_size: 3
+  stride: 1
+  padding: 1             
+  norm: bn
+  activ: elu
+  pad_type: zero
+
+# --- data options ---
+
+sel_every: 1
+dataset_path:
+data_folder_train:
+data_list_train:
+dataloader_type: mydataloader
+
+# -- paths to read images, and wrtie checkpoints ---
+test_dataset_conf:
+  oulu-npu:
+    dataset_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/oulu-npu'
+    img_path_machine0:               '/scratch_net/knuffi_third/susaha/apps/datasets/oulu-npu/rgb_images/test'
+    img_path_dev_machine0:           '/scratch_net/knuffi_third/susaha/apps/datasets/oulu-npu/rgb_images/dev'
+    protocol: 100
+    split: 1
+    sel_every: 1
+    sel_these_many: 20
+
+  replay-attack:
+    dataset_path_machine0:  '/scratch_net/knuffi_third/susaha/apps/datasets/idiap/replay-attack/'
+    full_img_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/idiap/replay-attack/rgb_images_full/train'
+    full_img_path_dev_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/idiap/replay-attack/rgb_images_full/dev'
+    full_img_path_test_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/idiap/replay-attack/rgb_images_full/test'
+    sel_every: 1
+    sel_these_many: 50
+    protocol: 1
+    split: 0
+
+  casia:
+    dataset_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/casia'
+    full_img_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/casia/rgb_images_full/train'
+    full_img_path_test_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/casia/rgb_images_full/test'
+    sel_every: 1
+    sel_these_many: 20
+    protocol: 1
+    split: 0
+
+  msu:
+    dataset_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/msu-mfsd'
+    full_img_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/msu-mfsd/rgb_images_full/train'
+    full_img_path_test_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/msu-mfsd/rgb_images_full/test'
+    sel_every: 1
+    sel_these_many: 50
+    protocol: 1
+    split: 0
+
+# --- transforms ---
+transforms:
+  # normalise
+  normalise: False
+  # random crop
+  rand_crop: False
+  crop_image_height: 128
+  crop_image_width: 128
+  # resize
+  resize: True
+  new_size: 128
+  # horizontal flip
+  horiflip: False
+

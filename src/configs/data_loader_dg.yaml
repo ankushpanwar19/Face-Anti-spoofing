@@ -1,0 +1,79 @@
+num_cls: 2
+# source_domain_list: ['siw', 'replay-attack', 'replay-mobile', 'casia']\
+# source_domain_list: ['oulu-npu','replay-attack','msu']
+frames_per_vid: 8
+sample_per_vid: 8
+
+crop_plus_full_frames: True
+replayattack_casia_include_cropped_faces_train: True
+replayattack_casia_include_cropped_faces_test: True
+
+oulu-npu:
+  eval_on_oulu_devset: False
+  dataset_path_machine0:  '/scratch_net/knuffi_third/susaha/apps/datasets/oulu-npu'
+  img_path_machine0:      '/scratch_net/knuffi_third/susaha/apps/datasets/oulu-npu/rgb_images/train'
+  full_img_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/oulu-npu/rgb_images_full/train' # uncropped rgb images
+  val_img_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/oulu-npu/rgb_images/dev'
+  test_img_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/oulu-npu/rgb_images/test'
+  
+  sel_every: 1
+  sel_every_mergeall: 5
+  sel_these_many: 0
+  proto: 5
+  split: 0
+
+replay-attack:
+  include_cropped_faces_train: True
+  include_cropped_faces_val: True
+  include_cropped_faces_test: True
+  
+  dataset_path_machine0:            '/scratch_net/knuffi_third/susaha/apps/datasets/idiap/replay-attack'
+  # path to rgb full images
+  full_img_path_machine0:           '/scratch_net/knuffi_third/susaha/apps/datasets/idiap/replay-attack/rgb_images_full/train'
+  full_img_path_dev_machine0:       '/scratch_net/knuffi_third/susaha/apps/datasets/idiap/replay-attack/rgb_images_full/dev'
+  full_img_path_test_machine0:      '/scratch_net/knuffi_third/susaha/apps/datasets/idiap/replay-attack/rgb_images_full/test'
+  # path to facial bounding boxes extracted by dlib
+  facial_bboxes_path_machine0:      '/scratch_net/knuffi_third/susaha/apps/datasets/idiap/replay-attack/facial-bboxes/train'
+  facial_bboxes_path_dev_machine0:  '/scratch_net/knuffi_third/susaha/apps/datasets/idiap/replay-attack/facial-bboxes/dev'
+  facial_bboxes_path_test_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/idiap/replay-attack/facial-bboxes/test'
+
+  sel_every: 1
+  sel_these_many: 0
+  sel_every_mergeall: 5
+  proto: 1
+  split: 0
+
+casia:
+  include_cropped_faces_train: True
+  include_cropped_faces_val: True
+  include_cropped_faces_test: True
+  dataset_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/casia'
+  full_img_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/casia/rgb_images_full/train'
+  full_img_path_test_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/casia/rgb_images_full/test'
+  facial_bboxes_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/casia/facial-bboxes/train'
+  facial_bboxes_path_test_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/casia/facial-bboxes/test'
+  
+  sel_every: 1
+  sel_these_many: 0 
+  sel_every_mergeall: 5
+  proto: 1
+  split: 0
+
+msu:
+  include_cropped_faces_train: True
+  include_cropped_faces_val: True
+  include_cropped_faces_test: True
+  
+  dataset_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/msu-mfsd'
+  full_img_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/msu-mfsd/rgb_images_full/train'
+  full_img_path_test_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/msu-mfsd/rgb_images_full/test'
+  facial_bboxes_path_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/msu-mfsd/facial-bboxes/train'
+  facial_bboxes_path_test_machine0: '/scratch_net/knuffi_third/susaha/apps/datasets/msu-mfsd/facial-bboxes/test'
+  
+  sel_every: 1
+  sel_these_many: 0 
+  sel_every_mergeall: 5
+  proto: 1
+  split: 0
+
+
