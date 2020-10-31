@@ -531,7 +531,7 @@ def get_loader(machine, config_dl, part, labels, mode, drop_last, **params):
         transform = transforms.Compose(transform_list)
 
     dataset = FaceAntiSpoof(machine, config_dl, part, labels, mode, res, app_feats, net_type, transform)
-    data_loader = data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, drop_last=drop_last)
+    data_loader = data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last) #* num_workers=num_workers,
     return data_loader
 
 
