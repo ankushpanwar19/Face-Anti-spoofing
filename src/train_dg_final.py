@@ -14,7 +14,7 @@ import numpy as np
 from init_eval_replay_casia import get_class_scores as get_class_scores_replay_casia
 from init_eval_msu import get_class_scores as get_class_scores_msu
 from init_eval_oulu import get_class_scores as get_class_scores_oulu
-# from eval_all_set import get_val_scores_all
+from eval_all_set import get_val_scores_all
 import matplotlib.pyplot as plt
 import math
 import yaml
