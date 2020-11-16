@@ -30,7 +30,7 @@ scheduler:
     gamma: 0.9
 
 # --- data options ---
-train_dataset: OuMsRa # Ou for Oulu, Ms for MSU, Ra for replay-attack, Ca for Casia   
+train_dataset: RaCaMs #OuCaRa #OuMsRa # Ou for Oulu, Ms for MSU, Ra for replay-attack, Ca for Casia   
 project_path: '' # this should be set by an argument
 out_train_dataset: 'DG_exp' # 'casia_replay_lstm_exp' or 'casia_replay_lstm_exp_ori'
 base_out_path: ''  # this will be set with an argument
@@ -39,11 +39,11 @@ base_path_machine0: '/scratch_net/knuffi_third/susaha/apps/'  #* path to dataset
 protocol: 1                                                           
 split: 0
 sel_these_many: 0                                                     
-test_dataset: 'casia' # 'oulu-npu' #'replay-attack' #'msu'                                              
-eval_type1: 'OuMsRa2CasiaVal'
-eval_type2: 'OuMsRa2CasiaTest'
+test_dataset: 'oulu-npu' # 'oulu-npu' #'replay-attack' #'msu'                                              
+eval_type1: 'RaCaMs2OuVal'
+eval_type2: 'RaCaMs2OuTest'
 
-eval2run: 'OuMsRa2Casia'
+eval2run: 'RaCaMs2Ou'
 
 
 strs2match: ['eval_anet']  

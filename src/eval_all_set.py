@@ -11,7 +11,16 @@ import copy
 ## THIS IS CURRENTLY USED FOR train_DA.py
 # --- This is modified to do all validation for all datasets
 def get_val_scores_all(trainer, config, configdl, eval_type, min_l2norm = None, max_l2norm = None, EER = None, EERTh = None):
-
+    '''
+    To get validation score for all train dataset
+    output:
+    hard_vids : Hard videos for all network type at once
+    eer: Hard videos for all network type at once
+    eerth: Hard videos for all network type at once
+    strResult: file format for writing
+    heading: file format for writing
+    val_anet_hter: validation hter for all network
+    '''
     debug = config['debug']
     machine = config['machine']
     device = config['device']

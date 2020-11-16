@@ -462,7 +462,11 @@ class MOT_faceantispoof(Dataset): # THE FILE 'part' HAS TO BE CHANGED
         return im
 
 def get_MOT_loader(machine, config_dl, part, labels, mode, drop_last, **params): # get_loader_all(config_dl, part_all[mode], labels_all, mode, drop_last, **params)
-
+    '''
+    Dataloader for MOtion/Videos using part and labels of frames
+    output:
+    dataloader: [tensor, video path, labelfor video]
+    '''
     print('>>>> data_loader_dnet.py --> get_MOT_loader() --> drop_last: {}'.format(drop_last))
 
     app_feats = params['app_feats']
@@ -504,6 +508,10 @@ def get_MOT_loader(machine, config_dl, part, labels, mode, drop_last, **params):
     return data_loader
 
 def get_loader(machine, config_dl, part, labels, mode, drop_last, **params):
+    '''
+    It gives pytorch data loader for given dataset after applying tranformation
+    ouput: Dataloader
+    '''
     print('>>>> data_loader_dnet.py --> get_loader() --> drop_last: {}'.format(drop_last))
     app_feats = params['app_feats']
     num_workers = params['num_workers']

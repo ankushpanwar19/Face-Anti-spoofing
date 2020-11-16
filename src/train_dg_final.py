@@ -47,7 +47,7 @@ def full_evaluation_lstm(trainer, config, config_dl, min_hter, iterations):
     mode_eval1 = config['eval_type1']
     print('MODE EVAL: ', mode_eval1)
     # --- Get validation scores
-    _, eer, eerth, strResult, heading, val_hter_list = get_val_scores_all(trainer, config, config_dl, mode_eval1)
+    _, eer, eerth, strResult, heading, val_hter_list = get_val_scores_all(trainer, config, config_dl, mode_eval1) #* call eval_all_set.py
 
     print('eer: {}, eerth: {}'.format(eer, eerth))
     if 'replay-attack' in config['test_dataset'] or 'casia' in config['test_dataset']:
@@ -329,7 +329,7 @@ for epoch in range(start_epoch, args.num_epoch):
                                                                        small_trainset=False, drop_last=True)
         vid_train_loaders += [vid_train_loader]
         vid_epock_sizes += [vid_epock_size]
-        vid_train_iters += [iter(vid_train_loader)]
+        vid_train_iters += [iter(vid_train_loader)] # store iterable train dataloaders list
     vid_es_max_idx = vid_epock_sizes.index(max(vid_epock_sizes))  # --- the longest dataset
     vid_epoch_size = vid_epock_sizes[vid_es_max_idx]
     total_vid_iterations = args.num_epoch * vid_epoch_size
@@ -341,7 +341,7 @@ for epoch in range(start_epoch, args.num_epoch):
     train_loaders = []
     epock_sizes = []
     train_iters = []
-    for domain in source_domain_list:  # --- get a number of training sets and merge it as list
+    for domain in source_domain_list:  # --- get a number of training sets and merge it as list #* this is for image network
         train_loader, epock_size, _ = get_dataloader_train(config, config_dl, domain, mode,
                                                            small_trainset=False, drop_last=True)
         train_loaders += [train_loader]
@@ -353,13 +353,13 @@ for epoch in range(start_epoch, args.num_epoch):
     print('+++++++++ [num iterations in one epoch: {}] [total iterations: {}] +++++++++'.format(epoch_size,
                                                                                                 total_iterations))
     
-    if args.mute_lstm == 0:
+    if args.mute_lstm == 0: # for training video lstm network 
 
         print('>>> Training on LSTM <<<')
-
+        vid_epoch_size=10
         for i in range(start_iters, vid_epoch_size):
 
-            for riIdx in range(num_domains):
+            for riIdx in range(num_domains): #* to check if any domain > biggest domain
                 if riIdx != vid_es_max_idx:
                     if i % vid_epock_sizes[riIdx] == 0 and i > 0:
                         vid_train_iters[riIdx] = iter(vid_train_loaders[riIdx])
@@ -371,7 +371,7 @@ for epoch in range(start_epoch, args.num_epoch):
             vid_gtLabels = torch.empty(batch_size_lstm * num_domains).long()  # --- live/spoof label for each frame
             sidx = 0  # --- start index in dim(0)
             eidx = batch_size_lstm  # --- end index in dim(0)
-            for riIdx in range(num_domains):
+            for riIdx in range(num_domains): #* form tensor of video n label from all train domains
                 video_single, samp_ids, gtlabels_video = next(vid_train_iters[riIdx])
                 video[sidx:eidx, :] = video_single  # --- data input
                 sampIds += samp_ids
@@ -383,16 +383,16 @@ for epoch in range(start_epoch, args.num_epoch):
                 (batch_size_lstm * num_domains)).long()  # --- 24 domain labels, like [0...0,1...1,2...2]
             sidx = 0
             eidx = batch_size_lstm
-            for riIdx in range(num_domains):
+            for riIdx in range(num_domains): #* form tensor of domain label (which domain it belong to)
                 vid_dom_lab[sidx:eidx] = riIdx
                 sidx = eidx
                 eidx += batch_size_lstm
             liveBinMask = vid_gtLabels.eq(0)  # --- items that equals to 0(live) in gtlabels
-            idxLive = liveBinMask.nonzero()
-            liveDomainGTLables = vid_dom_lab.index_select(0, idxLive.squeeze())  # ---varying length
+            idxLive = liveBinMask.nonzero() #* index of live examples
+            liveDomainGTLables = vid_dom_lab.index_select(0, idxLive.squeeze())  # ---varying length #* selecting live domain labels
             spoofBinMask = vid_gtLabels.eq(1)
             idxSpoof = spoofBinMask.nonzero()
-            spoofDomainGTLables = vid_dom_lab.index_select(0, idxSpoof.squeeze())  # ---varying length
+            spoofDomainGTLables = vid_dom_lab.index_select(0, idxSpoof.squeeze())  # ---varying length #* selecting spoof train data
             if config['anet_clsnet']['cost_func'] == 'bce':
                 gt_labels = vid_gtLabels.float()
 
@@ -428,7 +428,7 @@ for epoch in range(start_epoch, args.num_epoch):
                 config['iterations'] = iterations
                 min_hter = full_evaluation_lstm(trainer, config, config_dl, min_hter, iterations)
             iterations += 1
-            if iterations >= args.max_iter:
+            if iterations >= args.max_iter: # finish if iterataion exceeds max 100,000
                 sys.exit(">>>> Training Finished <<<<")
         config['epoc_cnt'] = epoc_cnt
         config['iterations'] = iterations

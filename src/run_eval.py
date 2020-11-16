@@ -257,6 +257,12 @@ def eval(config, trainer, dataset_name, iterations, epoc_cnt, eval_outpath, test
     trainer.set2train()
 
 def eval_all(config, trainer, source_domain_list, iterations, epoc_cnt, eval_outpath, test_loaders, num_exmps, source_score_list, gtFlags, debug, min_l2norm_val_previous=None, max_l2norm_val_previous=None, anet_loss='softmax', tsne_feats = None):
+    '''
+    It writes the validation score for all dataset in train at once in eval directory
+    output written for 3 networks: 
+    Score, Flag, video ID
+    0.45311534, 1, casia_live/002_1.avi
+    '''
     if debug:
         print('Running Eval_all ... --> Iteration: {}; Epoch: {}'.format(iterations + 1, epoc_cnt + 1))
     trainer.set2eval()
@@ -363,7 +369,7 @@ def eval_all(config, trainer, source_domain_list, iterations, epoc_cnt, eval_out
 
                     cls_sc_as_lstm = cls_scores.view(bsize, -1, 2) # --- cls_scores as lstm 4*8*2
 
-                    comb_cls_scores = 0.5*torch.mean(cls_sc_as_lstm,1) + 0.5*lstm_cls_scores # --- 4*2
+                    comb_cls_scores = 0.5*torch.mean(cls_sc_as_lstm,1) + 0.5*lstm_cls_scores # --- 4*2 #* take mean of score of images in images network
 
                     for eid in range(bsize): # --- each eid stands for a video                                        
 

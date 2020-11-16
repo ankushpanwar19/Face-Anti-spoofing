@@ -40,7 +40,14 @@ def get_dataset_id(dataset):
     return datasetID
 
 def get_dataloader_test(config, configdl, debug, dataset_name = None,drop_last = False):
-    
+    '''
+    Data loader for validation and test set for MSU
+    ouput: 
+    Dataloader videos [tensor,video path, label],
+    num_exmps [number of frames], scores ([[],1],[[],-2]), 
+    gtFlags [''live/real_client005_android_SD_scene01'':1,...], batch_size, num_test_batches, img_path = '/scratch_net/knuffi_third/susaha/apps/datasets/msu-mfsd/rgb_images_full/train'
+
+    '''
     print(' --- run_eval.py --> get_test_dataloader() --> getting the test dataloader ---')
 
 

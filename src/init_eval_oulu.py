@@ -7,6 +7,9 @@ from roc_utils import val_eval_hter
 
 ## THIS IS CURRENTLY USED FOR train_DA.py
 def get_class_scores(trainer, config, configdl, eval_type, min_l2norm = None, max_l2norm = None, EER = None, EERTh = None):
+    '''
+    To get scores for test data set oulu dataset
+    '''
 
     debug = config['debug']
     machine = config['machine']

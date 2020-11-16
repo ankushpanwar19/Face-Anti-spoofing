@@ -28,6 +28,14 @@ def get_dataset_id(dataset):
 
 
 def get_dataloader_test(config, configdl, debug,dataset_name = None,drop_last = False):
+    '''
+    Data loader for validation and test set for Replay and Casia data set
+    ouput: 
+    Dataloader videos [tensor,video path, label],
+    num_exmps [number of frames], scores ([[],1],[[],-2]), 
+    gtFlags ['ca/live/001_1.avi/00001':1,...], batch_size, num_test_batches, img_path = '/scratch_net/knuffi_third/susaha/apps/datasets/casia/rgb_images_full/train'
+
+    '''
     if debug:
         print(' --- run_eval.py --> get_test_dataloader() --> getting the test dataloader ---')
     

@@ -10,6 +10,12 @@ from data_loader_anet import get_MOT_loader
 
 
 def get_data_loader(config, config_dl, dataset_name, mode, small_trainset = False, drop_last = False):
+    '''
+    Dataloader for images network
+    output: 
+    Dataloader: Contain list of Images tensor [8,3,224,224],path of images ['ms/live/real_client0...ne01/00121'], labels of images [0,1]
+    epoch_size:iteration for this dataset
+    '''
     machine = config['machine']
     dataset = dataset_name
     num_workers = config['num_workers']
@@ -38,6 +44,13 @@ def get_data_loader(config, config_dl, dataset_name, mode, small_trainset = Fals
     return my_dataloader, epoch_size, model_save_step
 
 def get_MOT_loader_all(config, config_dl, dataset_name, mode, small_trainset = False, drop_last = False, da_mode = None):
+    '''
+    MOT(Motion)/ Video Data loader useful for all train dataset for video network (but use one by one for each data set)
+    output: 
+    Dataloader: Contain list of Video tensor[1,8,2,224,224],path of Videos ['ca/spoof/003_HR_4.avi'], labels of Videos [0,1]
+    Epoch_Size = subvideos=videos*sample_per vid(8), 
+    save at step
+    '''
     # data_loader = None
     # epoch_size = None
     # modelsave_step = None
@@ -110,6 +123,13 @@ def get_dataset_id(dataset):
 
 # --- This is used to get train labels & images
 def get_part_labels(config, config_dl, mode, small_trainset = False, drop_last = False, dataset_name=None):
+    ''' 
+    To get each frame/example path and label 
+    output: 
+    part_all : [ca/live/001_1.avi/00001,...]
+    labels : Dictionary of labels with path as keys ['ca/live/001_1.avi/00001':0, ...]
+    num_exmps:number of examples
+    '''
     machine = config['machine']
     net_type = config['net_type']
     # pickle_fname = config['pickle_fname']

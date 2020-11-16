@@ -3,11 +3,14 @@ import sys
 
 
 def vl_tpfp(labels, scores):
+    '''
+    Cumalative tp , fp cases
+    '''
     p = np.sum(labels > 0)
     n = np.sum(labels < 0)
-    perm = np.argsort(-scores)
+    perm = np.argsort(-scores) #* this will give index which will sort the array in Desc
     scores = scores[perm]
-    stop = np.max(np.where(scores > np.NINF)) + 1
+    stop = np.max(np.where(scores > np.NINF)) + 1 #* get index of the least score
     perm = perm[:stop]
     labels = labels[perm]
     tp = np.cumsum(labels > 0)
@@ -18,6 +21,9 @@ def vl_tpfp(labels, scores):
 
 
 def vl_roc(scores, labels):
+    '''
+    it gives ROC curve i.e different tpr, fpr at different threshold possible
+    '''
     info = {}
     tp, fp, p, n, perm = vl_tpfp(labels, scores)
     small = 1e-10
@@ -39,6 +45,13 @@ def vl_roc(scores, labels):
 
 
 def performances(scores, labels, vids, eer=None, eerth=None):
+    '''
+    output:
+    threashold : EER threshold 
+    EER : EER value i.e fpr 
+    perf : [APCER, BPCER, ACER] for replay and print attack separately plus max of both
+    al: ['replay','print']
+    '''
     if not eer and not eerth:
         TPR, TNR, Info = vl_roc(scores, labels)
         EER = Info['eer']*100
@@ -67,21 +80,27 @@ def performances(scores, labels, vids, eer=None, eerth=None):
         print('Error in roc_utils.py --> performances(), len(attacks_labels) should be 1 or 2, but it is something else!!!')
         sys.exit()
     real_scores = scores[labels > 0]
-    BPCER = (np.sum(real_scores < threashold) / len(real_scores)) * 100
+    BPCER = (np.sum(real_scores < threashold) / len(real_scores)) * 100 #Bona-fide Presentation Classification Error Rate
 
     for i in range(len(attacks_labels)):
         attack_scores = scores[labels == attacks_labels[i]]
-        perf[al[i]] += [(np.sum(attack_scores >= threashold) / len(attack_scores)) * 100]
+        perf[al[i]] += [(np.sum(attack_scores >= threashold) / len(attack_scores)) * 100] # AttacK presentation Classification error rate
         perf[al[i]] += [BPCER]
-        perf[al[i]] += [(perf[al[i]][0] + perf[al[i]][1]) / 2.0]
+        perf[al[i]] += [(perf[al[i]][0] + perf[al[i]][1]) / 2.0] #* ACER average classification rate
     if len(attacks_labels) > 1:
-        perf['max'] += [max(perf['replay'][0], perf['print'][0])]
-        perf['max'] += [max(perf['replay'][1], perf['print'][1])]
-        perf['max'] += [max(perf['replay'][2], perf['print'][2])]
+        perf['max'] += [max(perf['replay'][0], perf['print'][0])] #* max APCER
+        perf['max'] += [max(perf['replay'][1], perf['print'][1])] #* max APCER
+        perf['max'] += [max(perf['replay'][2], perf['print'][2])] #* max ACER
     return threashold, EER, perf, al
 
 
 def myeval(score_fname, outfile_name, eer=None, eerth=None, eval_type=None):
+    '''
+    It evaluates EER, EER threshold etc and writes to outfile EER, threshold, ACER , BPCER, APCER. It performs this for all types of network anet, lstm, comb .
+    Output:
+    hard_vids (videos which are misclassified), eer, eerth, 
+    strResult, heading will be used for writting to file in proper format
+    '''
     scores = []
     labels = []
     vids = []
@@ -95,12 +114,12 @@ def myeval(score_fname, outfile_name, eer=None, eerth=None, eval_type=None):
     scores = np.asarray(scores)
     labels = np.asarray(labels)
     labels = labels.astype(int)
-    eerth, eer, perf, al = performances(scores, labels, vids,  eer=eer, eerth=eerth)
+    eerth, eer, perf, al = performances(scores, labels, vids,  eer=eer, eerth=eerth) # eer gives FPR value
     num_vids = len(vids)
     hard_vids = []
     for i in range(num_vids):
         if labels[i] > 0 and scores[i] < eerth:
-            hard_vids += [vids[i]]
+            hard_vids += [vids[i]] #* hard videos to classify (classified incorrectly)
         if labels[i] < 0 and scores[i] >= eerth:
             hard_vids += [vids[i]]
     outfile = open(outfile_name, 'w')
@@ -164,7 +183,9 @@ def perform_hter(scores, labels, vids, eer=None, eerth=None):
 
 
 def val_eval_hter(score_fname,iterations, eer=None, eerth=None): # --- need to specify eer and eerth here
-    
+    '''
+    calculates hter for validation
+    '''
     scores = []
     labels = []
     vids = []
