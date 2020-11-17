@@ -146,7 +146,9 @@ data/
 ### Ignore submissions
 output_folder/*
 output/*
-
+sbatch_log/*
+sbatch_train_prat.sh
+sbatch_prat.sh
 ## Ignore checkpoint file
 *.ckpt
 
