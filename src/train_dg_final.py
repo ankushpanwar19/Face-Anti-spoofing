@@ -111,8 +111,8 @@ parser.add_argument('--lr_policy', type=str, default='ConstantLR')
 parser.add_argument('--da_lambda_cnn', type=float, default=0.2, help='help text here.')
 parser.add_argument('--da_lambda_lstm', type=float, default=0.2, help='help text here.')
 parser.add_argument('--da_gamma', type=float, default=1, help='help text here.')
-parser.add_argument('--batch_size_cnn', type=int, default=8)
-parser.add_argument('--batch_size_lstm', type=int, default=1)
+parser.add_argument('--batch_size_cnn', type=int, default=16)
+parser.add_argument('--batch_size_lstm', type=int, default=2)
 parser.add_argument('--num_epoch', type=int, default=10)
 parser.add_argument('--machine', type=int, default=0)
 parser.add_argument('--max_iter', type=int, default=100000)
@@ -356,10 +356,10 @@ for epoch in range(start_epoch, args.num_epoch):
     if args.mute_lstm == 0: # for training video lstm network 
 
         print('>>> Training on LSTM <<<')
-        vid_epoch_size=10
+        # vid_epoch_size=10
         for i in range(start_iters, vid_epoch_size):
 
-            for riIdx in range(num_domains): #* to check if any domain > biggest domain
+            for riIdx in range(num_domains): #* to re initiate data loader for small domains
                 if riIdx != vid_es_max_idx:
                     if i % vid_epock_sizes[riIdx] == 0 and i > 0:
                         vid_train_iters[riIdx] = iter(vid_train_loaders[riIdx])

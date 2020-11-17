@@ -293,7 +293,7 @@ class ClsCondDomainNetHeads(nn.Module):
 
 
 class ClsCondDomainNet(nn.Module):
-    def __init__(self, config, debug, nettype=None,use_cvpr_2019_bbone = 0):
+    def __init__(self, config, debug, nettype=None,use_cvpr_2019_bbone = None):
         super(ClsCondDomainNet, self).__init__()
         '''
         DIB network layers before live and spoof heads
@@ -302,16 +302,18 @@ class ClsCondDomainNet(nn.Module):
         # print(' --- networks.py --> class ClsCondDomainNet -->  __init__() for {} ---'.format(nettype))
         self.debug = debug
         self.nettype = nettype
-        # self.inp_dim = config['inp_dim']
-        # self.out_dim1 = config['out_dim1']
-        # self.drpval = config['dropoutv']
+        #* IT WAS COMMENTED BEFORE
+        self.inp_dim = config['inp_dim']
+        self.out_dim1 = config['out_dim1']
+        self.drpval = config['dropoutv']
+        #*
         if use_cvpr_2019_bbone == 0:
             self.inp_dim = 1024
             self.out_dim1 = 1024
         elif use_cvpr_2019_bbone == 1:
             self.inp_dim =512
             self.out_dim1 = 512
-        self.drpval = 0.2
+        # self.drpval = 0.2
         # print('[inp_dim:{}] [out_dim1:{}]'.format(self.inp_dim, self.out_dim1))
         # print('-------------------------------')
         model = []

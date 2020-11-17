@@ -354,6 +354,7 @@ def eval_all(config, trainer, source_domain_list, iterations, epoc_cnt, eval_out
             with torch.no_grad():
                 test_iter = iter(test_dataloader)
                 num_test_batches = len(test_dataloader)
+                # num_test_batches=20
                 print('NUM_TEST_BATCHES: ',num_test_batches)
                 
                 for bid in range(0, num_test_batches):
