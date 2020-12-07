@@ -73,6 +73,8 @@ class FaceAntiSpoof(Dataset):
             dataset = 'casia'
         elif datasetID == 'ms':
             dataset = 'msu'
+        elif datasetID == 'ce':
+            dataset = 'celebA'
         else:
             pass
 
@@ -110,6 +112,8 @@ class FaceAntiSpoof(Dataset):
             img_path = configdl[dataset]['full_img_path_machine{}'.format(machine)]
         elif mode == 'test' and datasetID == 'ms':
             img_path = configdl[dataset]['full_img_path_test_machine{}'.format(machine)]
+        elif mode == 'test' and datasetID == 'ce':
+            img_path = configdl[dataset]['full_img_path_test_machine{}'.format(machine)]
         else:
             print('>>>>>>>>>>>>  Error: from data_loader_anet.py --> get_dataset_paths() <<<<<<<<<<<<<<<<<<<<')
             print(
@@ -123,17 +127,21 @@ class FaceAntiSpoof(Dataset):
             img_path = join(img_path, splitStr[1], splitStr[2], splitStr[3], '{}.png'.format(splitStr[4]))
         elif datasetID == 'ou':
             img_path = join(img_path, splitStr[1], '{}.png'.format(splitStr[2]))
+        elif datasetID == 'ce' and mode=='train':
+            img_path = join(img_path, splitStr[1],splitStr[2],'{}.jpg'.format(splitStr[3])) # splitStr[0]='ce'
+        elif datasetID == 'ce' and mode=='test':
+            img_path = join(img_path, splitStr[1],splitStr[2],'{}.png'.format(splitStr[3])) # splitStr[0]='ce'
         else:
             img_path = join(img_path, splitStr[1], splitStr[2], '{}.png'.format(splitStr[3]))
 
         facialBBoxesPath = None
-        if (datasetID == 'ra' or datasetID == 'ca' or datasetID == 'ms') and mode == 'train':
+        if (datasetID == 'ra' or datasetID == 'ca' or datasetID == 'ms' or datasetID == 'ce') and mode == 'train':
             facialBBoxesPath = configdl[dataset]['facial_bboxes_path_machine{}'.format(machine)]
         elif datasetID == 'ra' and mode == 'val':
             facialBBoxesPath = configdl[dataset]['facial_bboxes_path_dev_machine{}'.format(machine)]
         elif (datasetID == 'ca' or datasetID == 'ms') and mode == 'val':
             facialBBoxesPath = configdl[dataset]['facial_bboxes_path_machine{}'.format(machine)]
-        elif (datasetID == 'ra' or datasetID == 'ca' or datasetID == 'ms') and mode == 'test':
+        elif (datasetID == 'ra' or datasetID == 'ca' or datasetID == 'ms' or datasetID == 'ce') and mode == 'test':
             facialBBoxesPath = configdl[dataset]['facial_bboxes_path_test_machine{}'.format(machine)]
         else:
             pass
@@ -143,7 +151,10 @@ class FaceAntiSpoof(Dataset):
             pass
             # print('no facial bboxes path specified')
         if facialBBoxesPath and configdl[dataset]['include_cropped_faces_{}'.format(mode)]:
-            facial_text_file = join(facialBBoxesPath, splitStr[1], splitStr[2], '{}.txt'.format(splitStr[3]))
+            if datasetID=='ce':
+                facial_text_file = join(facialBBoxesPath, splitStr[1], splitStr[2], '{}_BB.txt'.format(splitStr[3]))
+            else:
+                facial_text_file = join(facialBBoxesPath, splitStr[1], splitStr[2], '{}.txt'.format(splitStr[3]))
             if not os.path.isfile(facial_text_file):
                 facial_text_file = None
 
@@ -156,7 +167,15 @@ class FaceAntiSpoof(Dataset):
         y1 = None
         x2 = None
         y2 = None
-        if str:
+        if "CelebA" in facial_text_file:
+            str = str[0].strip().split()
+            x1 = float(str[0].strip())
+            y1 = float(str[1].strip())
+            w = float(str[2].strip())
+            h = float(str[3].strip())
+            x2=x1+w
+            y2=y1+h
+        elif str:
             str = str[0].strip()
             str = str.split(',')
             x1 = float(str[0].strip())
@@ -539,7 +558,36 @@ def get_loader(machine, config_dl, part, labels, mode, drop_last, **params):
         transform = transforms.Compose(transform_list)
 
     dataset = FaceAntiSpoof(machine, config_dl, part, labels, mode, res, app_feats, net_type, transform)
-    data_loader = data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last) #* num_workers=num_workers,
+    data_loader = data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last,num_workers=num_workers)
     return data_loader
 
+def get_dataset(machine, config_dl, part, labels, mode, drop_last, **params):
+    print('>>>> data_loader_dnet.py --> get_dataset() --> drop_last: {}'.format(drop_last))
+    app_feats = params['app_feats']
+    num_workers = params['num_workers']
+    dataset_name = params['dataset_name']
+    res = params['res']
+    shuffle = params['shuffle']
+    # batch_size = params['batch_size']
+    # depth_map_size = params['depth_map_size']
+    net_type = params['net_type']
 
+    transform_list = []
+    transform = None
+
+    if not net_type == 'anet':
+        transform_list = [transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])] + transform_list
+        transform_list = [transforms.ToTensor()] + transform_list
+        transform_list = [transforms.RandomHorizontalFlip()] + transform_list if mode == 'train' else transform_list
+        transform_list = [transforms.RandomResizedCrop(224)] + transform_list if mode == 'train' else transform_list
+        transform_list = [transforms.CenterCrop(224)] + transform_list if mode == 'test' or mode == 'val' else transform_list
+        transform_list = [transforms.Resize(256)] + transform_list if mode == 'test' or mode == 'val' else transform_list  # RandomResizedCrop RandomSizedCrop
+    else:
+        transform_list = [transforms.ToTensor()]
+
+    if transform_list:
+        transform = transforms.Compose(transform_list)
+
+    dataset = FaceAntiSpoof(machine, config_dl, part, labels, mode, res, app_feats, net_type, transform)
+
+    return dataset

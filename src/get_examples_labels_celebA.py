@@ -1,7 +1,8 @@
-from os.path import join
+from os.path import join,splitext
 from os import listdir
 import random
 import sys
+import json
 
 def get_frm_list(mode, protocol, img_path, sel_every, sel_these_many, disc_frms, flag, fldnm, split):
     fpath = join(img_path, fldnm)
@@ -29,6 +30,9 @@ def get_frm_list(mode, protocol, img_path, sel_every, sel_these_many, disc_frms,
 
 
 def read_proto_file(mode, protocol, img_path, sel_every, sel_these_many, disc_frms, fname, part, labels, gtFlags, scores, split, net_type, datasetID = None, num_cls = 2):
+    '''currently only for train
+    =
+    '''
     num_live_exmps = 0
     num_spoof_exmps = 0
     if datasetID:
@@ -36,50 +40,19 @@ def read_proto_file(mode, protocol, img_path, sel_every, sel_these_many, disc_fr
     else:
         dsID = 'none'
     with open(fname) as f:
-        for line in f:
-            sstr = line.split(',')
-            flag = int(sstr[0])
-            fldnm = sstr[1].strip()
-            if flag == 1:
-                exm_cls = 'live'
-                img_path1 = '{}/{}'.format(img_path, exm_cls)
-            elif flag == -1 or flag == -2:
-                exm_cls = 'spoof'
-                img_path1 = '{}/{}'.format(img_path, exm_cls)
+        files=json.load(f)
+        for imgpath in files.keys(): #imgpath='Data/train/4980/spoof/000003.jpg'
+            # print(imgpath)
+            path_split=splitext(imgpath)[0].split('/') 
+            path_id=join('ce',path_split[2],path_split[3],path_split[4]) #path_id='4980/spoof/000003' (removed jpg)
+            part[mode].append(path_id)
+            label_id=files[imgpath][43]
+            labels[path_id]=label_id
+            gtFlags[path_id]=label_id
+            if label_id==0:
+                num_live_exmps+=1
             else:
-                print('error found in get_examples_labels_casia.py --> read_proto_file(): flag value is not correct!!!')
-                sys.exit()
-            flist = get_frm_list(mode, protocol, img_path1, sel_every, sel_these_many, disc_frms, flag, fldnm, split)
-            for i in flist:
-                sfname = i.split('.')
-                id = join(dsID, exm_cls, fldnm, sfname[0])
-                part[mode].append(id)
-                if flag == 1:
-                    labels[id] = 0
-                else:
-                    if num_cls == 3:
-                        if flag == -1:
-                            labels[id] = 1
-                        elif flag == -2:
-                            labels[id] = 2
-                    elif num_cls == 2:
-                        labels[id] = 1
-                    else:
-                        print('error found in get_examples_labels_casia.py --> read_proto_file(): num_cls value is not correct!!!')
-                        sys.exit()
-                if mode == 'test' or mode == 'val':
-                    gtFlags[id] = flag
-            if mode == 'test' or mode == 'val':
-                scid = join(exm_cls, fldnm)
-                # if net_type in 'anet' or net_type in 'dnet' or net_type in 'resnet' or net_type in 'dadpnet' or net_type in 'lstmmot':
-                #     scores[scid] = [[], flag]
-                # elif net_type in 'fusion':
-                #     scores[scid] = [[], [], flag]
-                scores[scid] = [[], flag]
-            if flag == 1:
-                num_live_exmps += len(flist)
-            elif (flag == -1) or (flag == -2):
-                num_spoof_exmps += len(flist)
+                num_spoof_exmps+=1
     return part, labels, gtFlags, scores, num_live_exmps, num_spoof_exmps
 
 
@@ -87,12 +60,9 @@ def get_part_labels(mode, protocol, proto_path, img_path, sel_every, sel_these_m
                     disc_frms, split, net_type, small_trainset = False, datasetID = None, num_cls = 2):
     fname = ''
     if mode == 'train' or mode == 'val':
-        if small_trainset:
-            fname = join(proto_path, 'Train_debug.txt')
-        else:
-            fname = join(proto_path, 'Train.txt')
+        fname = join(proto_path, 'train_label.json')
     elif mode == 'test':
-        fname = join(proto_path, 'Test.txt')
+        fname = join(proto_path, 'test_label.json')
     # print('>>>>> get_examples_labels_casia.py --> get_part_labels() --> proto-fname: {} '.format(fname))
     # print('Reading protocol file := [{}]'.format(fname))
     part = {}
@@ -121,10 +91,27 @@ def get_examples_labels(datset_path, mode, protocol, split, sel_every, sel_these
         sel_these_many = sel_thesemany
     else:
         pass
-    proto_path = '' #find protocol path
+    proto_path = ''
     if (protocol == 1):
-        proto_path = join(datset_path, 'Protocols', 'Protocol_{}'.format(protocol))
+        proto_path = join(datset_path, 'metas', 'protocol{}'.format(protocol))
     part, labels, gtFlags, scores, num_exmps = get_part_labels\
         (mode, protocol, proto_path, img_path, sel_every, sel_these_many, disc_frms,
          split, net_type, small_trainset = small_trainset, datasetID = datasetID, num_cls = num_cls)
     return part, labels, gtFlags, scores, num_exmps
+
+
+
+if __name__ == "__main__":
+    
+    datset_path='/scratch/apanwar/CelebA-Spoof/CelebA_Spoof/'
+    mode='train'
+    protocol=1 
+    split=0
+    sel_every=0 
+    sel_thesemany=0,
+    img_path='/scratch/apanwar/CelebA-Spoof/CelebA_Spoof/Data/train'
+    net_type='lstmmot' 
+    small_trainset = False
+    datasetID = 'Ce'
+    num_cls = 2
+    get_examples_labels(datset_path, mode, protocol, split, sel_every, sel_thesemany, img_path, net_type, small_trainset = False, datasetID = None, num_cls = 2)

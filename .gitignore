@@ -149,6 +149,7 @@ output/*
 sbatch_log/*
 sbatch_train_prat.sh
 sbatch_prat.sh
+src/ocda-fas
 ## Ignore checkpoint file
 *.ckpt
 

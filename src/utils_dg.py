@@ -1,10 +1,15 @@
 import math
+import sys
+sys.path.append("src")
+import os
+print (os.getcwd())
 from get_examples_labels_siw import get_examples_labels as get_siw_dataset
 from get_examples_labels_oulu import get_examples_labels as get_oulu_dataset
 from get_examples_labels_replayattack import get_examples_labels as get_repatack_dataset
 # from get_examples_labels_replaymobile import get_examples_labels as get_repmob_dataset
 from get_examples_labels_casia import get_examples_labels as get_casia_dataset
 from get_examples_labels_msu import get_examples_labels as get_msu_dataset
+from get_examples_labels_celebA import get_examples_labels as get_celebA_dataset
 from data_loader_anet import get_loader as get_loader_all
 from data_loader_anet import get_MOT_loader
 
@@ -117,6 +122,8 @@ def get_dataset_id(dataset):
         datasetID = 'ca'
     elif dataset == 'msu':
         datasetID = 'ms'
+    elif dataset == 'celebA':
+        datasetID = 'ce'
     else:
         pass
     return datasetID
@@ -167,6 +174,9 @@ def get_part_labels(config, config_dl, mode, small_trainset = False, drop_last =
     elif datasetID == 'ms':
         part, labels, _, _, num_exmps = \
             get_msu_dataset(dataset_path, mode, proto, split, sel_every, sel_these_many, img_path, net_type, small_trainset = small_trainset,datasetID = datasetID, num_cls = num_cls)
+    elif datasetID == 'ce':
+        part, labels, _, _, num_exmps = \
+            get_celebA_dataset(dataset_path, mode, proto, split, sel_every, sel_these_many, img_path, net_type, small_trainset = small_trainset,datasetID = datasetID, num_cls = num_cls)
     else:
         pass
     return part, labels, num_exmps

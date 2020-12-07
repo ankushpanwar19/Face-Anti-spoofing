@@ -221,6 +221,11 @@ class Trainer_ResNetMOTDG(nn.Module): ## the trainer used for current train_DA.p
         lstm_out = self.lstm(lstm_input) # --- 4*2
         return resnet_clsnet_out,lstm_out
 
+    def forward_cnn(self, images):
+        resnet_out = self.gen(images)
+        resnet_clsnet_out = self.gen.fc(resnet_out) # --- 16*2
+        return resnet_out,resnet_clsnet_out
+
     def save(self, snapshot_dir, iterations):
         # Save net params
         net_name = os.path.join(snapshot_dir, 'net_%08d.pt' % (iterations + 1))
@@ -280,6 +285,19 @@ class Trainer_ResNetMOTDG(nn.Module): ## the trainer used for current train_DA.p
         self.net_scheduler = get_scheduler(self.net_opt, config['optim'], iterations)
         iterations -= 1  # iteration is 0 indexed, so need to minus one
         return iterations
+
+    def load_weights(self, checkpoint_file):
+        # Load generators
+        print(self.device)
+        state_dict = torch.load(checkpoint_file, map_location=self.device)
+        self.gen.load_state_dict(state_dict['gen'])
+        self.lstm.load_state_dict(state_dict['lstm'])
+        self.cnn_cond_dom_head.load_state_dict(state_dict['cnn_cond_dom_head'])
+        self.cnn_cond_dom_tail_live.load_state_dict(state_dict['cnn_cond_dom_tail_live'])
+        self.cnn_cond_dom_tail_spoof.load_state_dict(state_dict['cnn_cond_dom_tail_spoof'])
+        self.lstm_cond_dom_head.load_state_dict(state_dict['lstm_cond_dom_head'])
+        self.lstm_cond_dom_tail_live.load_state_dict(state_dict['lstm_cond_dom_tail_live'])
+        self.lstm_cond_dom_tail_spoof.load_state_dict(state_dict['lstm_cond_dom_tail_spoof'])
 
     def update_learning_rate(self):
         self.net_scheduler.step()

@@ -76,4 +76,18 @@ msu:
   proto: 1
   split: 0
 
-
+celebA:
+  include_cropped_faces_train: True
+  include_cropped_faces_val: True
+  include_cropped_faces_test: True
+  dataset_path_machine0: '/scratch_net/moustachos/apanwar/CelebA-Spoof/CelebA_Spoof/'
+  full_img_path_machine0: '/scratch_net/moustachos/apanwar/CelebA-Spoof/CelebA_Spoof/Data/train'
+  full_img_path_test_machine0: '/scratch_net/moustachos/apanwar/CelebA-Spoof/CelebA_Spoof/Data/test'
+  facial_bboxes_path_machine0: '/scratch_net/moustachos/apanwar/CelebA-Spoof/CelebA_Spoof/Data/train'
+  facial_bboxes_path_test_machine0: '/scratch_net/moustachos/apanwar/CelebA-Spoof/CelebA_Spoof/Data/test'
+  
+  sel_every: 1
+  sel_these_many: 0 
+  sel_every_mergeall: 5
+  proto: 1
+  split: 0

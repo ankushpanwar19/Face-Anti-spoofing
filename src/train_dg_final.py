@@ -325,8 +325,7 @@ for epoch in range(start_epoch, args.num_epoch):
     start_iters = 0
 
     for domain in source_domain_list:  # --- get a number of training sets and merge it as list
-        vid_train_loader, vid_epock_size, _ = get_dataloader_train_mot(config, config_dl, domain, mode,
-                                                                       small_trainset=False, drop_last=True)
+        vid_train_loader, vid_epock_size, _ = get_dataloader_train_mot(config, config_dl, domain, mode,small_trainset=False, drop_last=True)
         vid_train_loaders += [vid_train_loader]
         vid_epock_sizes += [vid_epock_size]
         vid_train_iters += [iter(vid_train_loader)] # store iterable train dataloaders list
@@ -504,7 +503,7 @@ for epoch in range(start_epoch, args.num_epoch):
                 config['epoc_cnt'] = epoc_cnt
                 config['iterations'] = iterations
                 min_hter = full_evaluation_lstm(trainer, config, config_dl, min_hter, iterations)
-
+                
         config['epoc_cnt'] = epoc_cnt
         config['iterations'] = iterations
         chkp_loc = trainer.save(checkpoint_directory, iterations)

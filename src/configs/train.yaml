@@ -9,7 +9,7 @@ eval_at_first_iter: True
 set_seed: False
 exp_name_prefix: lstmmot_exp_001                                      
 
-num_workers: 2
+num_workers: 12
 
 # --- Train options ---
 mute_cnn: False # if True, then CNN part is not trained
@@ -30,7 +30,7 @@ scheduler:
     gamma: 0.9
 
 # --- data options ---
-train_dataset: RaCaMs #OuCaMs #RaCaMs #OuCaRa #OuMsRa # Ou for Oulu, Ms for MSU, Ra for replay-attack, Ca for Casia   
+train_dataset: MsCaOu #OuCaMs #RaCaMs #OuCaRa #OuMsRa # Ou for Oulu, Ms for MSU, Ra for replay-attack, Ca for Casia   
 project_path: '' # this should be set by an argument
 out_train_dataset: 'DG_exp' # 'casia_replay_lstm_exp' or 'casia_replay_lstm_exp_ori'
 base_out_path: ''  # this will be set with an argument
@@ -39,11 +39,11 @@ base_path_machine0: '/scratch_net/knuffi_third/susaha/apps/'  #* path to dataset
 protocol: 1                                                           
 split: 0
 sel_these_many: 0                                                     
-test_dataset: 'oulu-npu' #'replay-attack' #'msu'                                              
-eval_type1: 'RaCaMs2OuVal'
-eval_type2: 'RaCaMs2OuTest'
+test_dataset: 'msu' #'replay-attack' #'msu'                                              
+eval_type1: 'MsCaOu2RaVal'
+eval_type2: 'MsCaOu2RaTest'
 
-eval2run: 'RaCaMs2Ou'
+eval2run: 'MsCaOu2Ra'
 
 
 strs2match: ['eval_anet']  
@@ -56,7 +56,7 @@ break_after_thesemany: 100
 
 # --- data options ---
 batch_size_lstm: 4 
-batch_size_cnn : 16
+batch_size_cnn : 32
 reinit_resnet_fc: True
 resnet_loadmodel: 'imagenet'
 resnet_vggface_model: 0 
@@ -252,4 +252,61 @@ transforms:
   new_size: 128
   # horizontal flip
   horiflip: False
+
+
+# ---- target set Mann net ------
+mann_net:
+  src_dataset: MsCaOu
+  tgt_dataset: Ce
+
+  batch_size_tgt: 32
+  batch_size_tgt_test: 32
+  batch_size_src: 32
+  lr: 0.00001
+  loss: sgd
+  centroid_fname: 'centroids.npy'
+  epochs: 10
+  beta1: 0.9
+  beta2: 0.999
+  weight_decay: 0.00001
+  feat_dim: 2048
+
+domain_factor_net:
+  src_dataset: MsCaOu
+  tgt_dataset: Ce
+
+  batch_size_tgt: 16
+  batch_size_src: 16
+  lr: 0.0001
+  loss: sgd
+  centroid_fname: 'centroids.npy'
+  epochs: 1
+  beta1: 0.5
+  beta2: 0.999
+  weight_decay: 0.00001
+  feat_dim: 2048
+  gamma_dispell: 1
+  gamma_rec: 10
+  fake_label_type: 'random'
+  
+scheduled_mann_net:
+  src_dataset: MsCaOu
+  tgt_dataset: Ce
+
+  batch_size_tgt: 16
+  batch_size_src: 16
+  lr: 0.0001
+  loss: sgd
+  centroid_fname: 'centroids.npy'
+  epochs: 10
+  beta1: 0.5
+  beta2: 0.999
+  weight_decay: 0.00001
+  feat_dim: 2048
+  gamma_dispell: 1
+  gamma_rec: 10
+  fake_label_type: 'random'
+  schedule_strategy: 'shift' #'expand'
+  schedule_power: 0.3
+  
 
