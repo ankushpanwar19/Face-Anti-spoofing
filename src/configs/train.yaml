@@ -9,7 +9,7 @@ eval_at_first_iter: True
 set_seed: False
 exp_name_prefix: lstmmot_exp_001                                      
 
-num_workers: 12
+num_workers: 8
 
 # --- Train options ---
 mute_cnn: False # if True, then CNN part is not trained
@@ -280,8 +280,8 @@ domain_factor_net:
   lr: 0.0001
   loss: sgd
   centroid_fname: 'centroids.npy'
-  epochs: 1
-  beta1: 0.5
+  epochs: 5
+  beta1: 0.9
   beta2: 0.999
   weight_decay: 0.00001
   feat_dim: 2048
@@ -295,10 +295,10 @@ scheduled_mann_net:
 
   batch_size_tgt: 16
   batch_size_src: 16
-  lr: 0.0001
+  lr: 0.00001
   loss: sgd
   centroid_fname: 'centroids.npy'
-  epochs: 10
+  epochs: 20
   beta1: 0.5
   beta2: 0.999
   weight_decay: 0.00001

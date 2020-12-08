@@ -37,12 +37,14 @@ def train_epoch(loader_src, loader_tgt, net, opt_domain_factor, opt_decoder, opt
     net.decoder.eval()
     net.tgt_net.eval()
 
+    net.to(device)
+    
     last_update = -1
     for batch_idx, ((data_s,_,cls_s_gt), (data_t,_,cls_t_gt)) in enumerate(joint_loader):
         
         # log basic mann train info
         info_str = "[Train domain_factor Net] Epoch: {} [{}/{} ({:.2f}%)]".format(epoch, batch_idx*len(data_t),
-                                                                          N, 100 * batch_idx / N)
+                                                                          N, 100 * batch_idx*len(data_t) / N)
    
         ########################
         # Setup data variables #
@@ -193,11 +195,11 @@ def train_domain_factor_multi(args):
 
     tgt_train_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='train',net='domain_factor_net',type='tgt')
 
-    tgt_test_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='test',net='domain_factor_net',type='tgt')
+    # tgt_test_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='test',net='domain_factor_net',type='tgt')
 
-    if (len(src_data_loader.dataset)/ len(tgt_train_loader.dataset)< 0.7):
-        comb_dataset = torch.utils.data.ConcatDataset([src_data_loader.dataset,src_data_loader.dataset])
-        src_data_loader = torch.utils.data.DataLoader(comb_dataset, batch_size=config['domain_factor_net']['batch_size_src'], shuffle=True,drop_last=True,num_workers=config['num_workers'])
+    # if (len(src_data_loader.dataset)/ len(tgt_train_loader.dataset)< 0.7):
+    #     comb_dataset = torch.utils.data.ConcatDataset([src_data_loader.dataset,src_data_loader.dataset])
+    #     src_data_loader = torch.utils.data.DataLoader(comb_dataset, batch_size=config['domain_factor_net']['batch_size_src'], shuffle=True,drop_last=True,num_workers=config['num_workers'])
 
     ###########################
     # Setup cuda and networks #
@@ -251,7 +253,7 @@ def train_domain_factor_multi(args):
     ######################
     outdir=config['domainfactor_outpath']
     os.makedirs(outdir, exist_ok=True)
-    outfile = join(outdir, 'DomainFactorNet_{:s}_{:s}.pt'.format(config['domain_factor_net']['src_dataset'], config['domain_factor_net']['tgt_dataset']))
+    outfile = join(outdir, 'DomainFactorNet_{:s}_{:s}_{}.pt'.format(config['domain_factor_net']['src_dataset'], config['domain_factor_net']['tgt_dataset'],num_epoch))
     print('Saving to', outfile)
     net.save(outfile)
 

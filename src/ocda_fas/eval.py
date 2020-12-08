@@ -13,15 +13,64 @@ from source.models.dg_mann_net import DgMannNet
 from data_loader_anet import get_dataset
 from data_utils import get_domain_list,domain_combined_data_loaders
 
-def eval(config,configdl,src_domain_list,tgt_domain_list,net):
+def eval2(config,configdl,tgt_test_loader,net):
 
     #**********get data loader for validation get of all 3 set
 
-    src_val_data_loader=domain_combined_data_loaders(config,configdl,src_domain_list,'test',net='mann_net',type='src')
-
-    tgt_test_loader=domain_combined_data_loaders(config,configdl,tgt_domain_list,mode='test',net='mann_net',type='tgt')
+    # src_val_data_loader=domain_combined_data_loaders(config,configdl,src_domain_list,'test',net='mann_net',type='src')
 
     print("end")
+    device=config['device']
+    net.to(device)
+    predict_lst=[]
+    label_lst=[]
+    total=len(tgt_test_loader)
+    threshold=0.2974
+    with torch.no_grad():
+        with tqdm(total=total) as pbar:
+            for batch_idx, (data_t, t,labels) in enumerate(tgt_test_loader):
+
+                data_t = data_t.to(device)
+                data_t.require_grad = False
+
+                x_t,score_t,_ = net.tgt_net(data_t.clone())
+
+                direct_feature = x_t.clone()
+
+                # set up visual memory
+                keys_memory = net.centroids.detach().clone()
+                keys_memory=keys_memory.to(device)
+                # computing memory feature by querying and associating visual memory
+                values_memory = score_t.clone()
+                values_memory = values_memory.softmax(dim=1).to(device)
+                memory_feature = torch.matmul(values_memory, keys_memory)
+
+                # computing concept selector
+                concept_selector = net.fc_selector(x_t.clone()).tanh()
+                class_enhancer = concept_selector * memory_feature
+                x_t = direct_feature + class_enhancer
+
+                score_t = net.tgt_net.gen.fc(x_t.clone())
+                pred_sc=torch.softmax(score_t,dim=1)
+                # pred = torch.argmax(score_t, dim=1)
+                pred=pred_sc[:,0]<threshold  
+                pred=pred.double()
+                for i,_ in enumerate(pred):
+                    predict_lst.append(pred[i].item())
+                    label_lst.append(labels[i].item())
+                pbar.update(1)
+                # break
+
+    
+    tp, fp, tn, fn=perf_measure(label_lst,predict_lst)
+    fpr=fp/(tn+fp) # False rejection rate
+    fnr=fn/(tp+fn) # false acceptance rate
+    
+    hter= (fpr+fnr)/2
+    acc=(tp+tn)/(tp+fp+tn+fn)
+    print(hter,"  ",acc)
+    return hter,acc
+
 
     #*********write score to files
 
@@ -33,6 +82,7 @@ def eval(config,configdl,src_domain_list,tgt_domain_list,net):
 
     #**************cal  EER , HTER and write to file
 
+# def calc_y_pred(prob)÷
 def eval_tgt(config,configdl,tgt_test_loader,net):
 
     device=config['device']
@@ -129,7 +179,18 @@ if __name__ == "__main__":
     # domain list
     source_domain_list,target_domain_list= get_domain_list(config,'mann_net')
 
+    source_domain_list,target_domain_list= get_domain_list(config,'mann_net')
+
+    #  source and target Data loaders
+    # print
+    # src_data_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='train',net='mann_net',type='src')
+
+    # tgt_train_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='train',net='mann_net',type='tgt')
+
+    tgt_test_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='test',net='mann_net',type='tgt')
+
     num_cls=2
     net = DgMannNet(config,num_cls)
+    net
 
-    eval(config,configdl,source_domain_list,target_domain_list,net)
+    eval2(config,configdl,tgt_test_loader,net)
