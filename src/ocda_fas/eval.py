@@ -4,6 +4,8 @@ from argparse import ArgumentParser
 from tqdm import tqdm
 
 import torch
+from sklearn import metrics
+import numpy as np
 
 import sys
 sys.path.append("src")
@@ -13,7 +15,7 @@ from source.models.dg_mann_net import DgMannNet
 from data_loader_anet import get_dataset
 from data_utils import get_domain_list,domain_combined_data_loaders
 
-def eval2(config,configdl,tgt_test_loader,net):
+def eval2(config,val_test_loader,tgt_test_loader,net):
 
     #**********get data loader for validation get of all 3 set
 
@@ -24,8 +26,53 @@ def eval2(config,configdl,tgt_test_loader,net):
     net.to(device)
     predict_lst=[]
     label_lst=[]
+    total=len(val_test_loader)
+    # threshold=0.2974
+    with torch.no_grad():
+        with tqdm(total=total) as pbar:
+            for batch_idx, (data_t, t,labels) in enumerate(val_test_loader):
+
+                data_t = data_t.to(device)
+                data_t.require_grad = False
+
+                x_t,score_t,_ = net.tgt_net(data_t.clone())
+
+                direct_feature = x_t.clone()
+
+                # set up visual memory
+                keys_memory = net.centroids.detach().clone()
+                keys_memory=keys_memory.to(device)
+                # computing memory feature by querying and associating visual memory
+                values_memory = score_t.clone()
+                values_memory = values_memory.softmax(dim=1).to(device)
+                memory_feature = torch.matmul(values_memory, keys_memory)
+
+                # computing concept selector
+                concept_selector = net.fc_selector(x_t.clone()).tanh()
+                class_enhancer = concept_selector * memory_feature
+                x_t = direct_feature + class_enhancer
+
+                score_t = net.tgt_net.gen.fc(x_t.clone())
+                pred_sc=torch.softmax(score_t,dim=1)
+                pred = torch.argmax(pred_sc, dim=1) 
+
+                for i,_ in enumerate(pred):
+                    predict_lst.append(pred_sc[i,0].item())
+                    label_lst.append(labels[i].item())
+                pbar.update(1)
+                # break
+
+    fpr, tpr, thresholds = metrics.roc_curve(label_lst, predict_lst, pos_label=0)
+    fnr=1-tpr
+    diff=np.absolute(fpr-fnr)
+    idx=diff.argmin()
+    thrs=thresholds[idx]
+    print("Val :: HTER :",(fpr[idx]+fnr[idx])/2," Threshold:", thrs)
+
     total=len(tgt_test_loader)
-    threshold=0.2974
+    predict_lst=[]
+    label_lst=[]
+    # threshold=0.2974
     with torch.no_grad():
         with tqdm(total=total) as pbar:
             for batch_idx, (data_t, t,labels) in enumerate(tgt_test_loader):
@@ -52,23 +99,23 @@ def eval2(config,configdl,tgt_test_loader,net):
 
                 score_t = net.tgt_net.gen.fc(x_t.clone())
                 pred_sc=torch.softmax(score_t,dim=1)
-                # pred = torch.argmax(score_t, dim=1)
-                pred=pred_sc[:,0]<threshold  
+                pred = pred_sc[:,0]<thrs
                 pred=pred.double()
+
                 for i,_ in enumerate(pred):
                     predict_lst.append(pred[i].item())
                     label_lst.append(labels[i].item())
                 pbar.update(1)
-                # break
+                
 
-    
     tp, fp, tn, fn=perf_measure(label_lst,predict_lst)
     fpr=fp/(tn+fp) # False rejection rate
     fnr=fn/(tp+fn) # false acceptance rate
     
     hter= (fpr+fnr)/2
     acc=(tp+tn)/(tp+fp+tn+fn)
-    print(hter,"  ",acc)
+    print("Test :: HTER:{} ACC:{}".format(hter,acc))
+
     return hter,acc
 
 
@@ -158,7 +205,6 @@ if __name__ == "__main__":
     parser.add_argument('--src_checkpoint_file', type=str, default='checkpoints/net_00039439.pt')
     parser.add_argument('--mannnet_outpath', type=str, default='ocda_fas_files')
     parser.add_argument('--centroids_path', type=str, default='ocda_fas_files')
-
     args = parser.parse_args()
     # train_mann_multi(args)
 
@@ -172,6 +218,7 @@ if __name__ == "__main__":
     config['src_checkpoint_file']=os.path.join(args.experiment_path,args.src_checkpoint_file)
     config['mannnet_outpath']=os.path.join(args.experiment_path,args.mannnet_outpath)
     config['centroids_file']=os.path.join(args.experiment_path,args.centroids_path,config['mann_net']['centroid_fname'])
+    config['mannnet_chkpt_file']=os.path.join(args.experiment_path,args.centroids_path,'mann_net_MsCaOu_Ce.pt')
 
     configdl_fname= 'src/configs/data_loader_dg.yaml'
     configdl= get_config(configdl_fname)
@@ -188,9 +235,10 @@ if __name__ == "__main__":
     # tgt_train_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='train',net='mann_net',type='tgt')
 
     tgt_test_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='test',net='mann_net',type='tgt')
+    val_test_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='val',net='mann_net',type='tgt')
 
     num_cls=2
     net = DgMannNet(config,num_cls)
-    net
+    net.load(config['mannnet_chkpt_file'])
 
-    eval2(config,configdl,tgt_test_loader,net)
+    eval2(config,val_test_loader,tgt_test_loader,net)

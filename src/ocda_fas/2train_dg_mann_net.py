@@ -14,7 +14,7 @@ from utils_dg import get_data_loader as get_dataloader_train,get_part_labels
 from source.models.dg_mann_net import DgMannNet
 from data_loader_anet import get_dataset
 from data_utils import get_domain_list,domain_combined_data_loaders
-from eval import eval_tgt
+from eval import eval2
 
 import pdb
 
@@ -202,6 +202,8 @@ def train_mann_multi(args):
 
     tgt_train_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='train',net='mann_net',type='tgt')
 
+    tgt_val_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='val',net='mann_net',type='tgt')
+
     tgt_test_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='test',net='mann_net',type='tgt')
 
     if (len(src_data_loader.dataset)/ len(tgt_train_loader.dataset)< 0.7):
@@ -241,12 +243,12 @@ def train_mann_multi(args):
     ##############
     # Train mann #
     #############
-    hter,acc=eval_tgt(config,configdl,tgt_test_loader,net)
+    hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net)
     print("Start: HTER {}  acc {}".format(hter,acc))
     for epoch in range(num_epoch):
         err = train_epoch(src_data_loader, tgt_train_loader, net, opt_net, opt_dis, opt_selector, epoch,config['device']) 
 
-        hter,acc=eval_tgt(config,configdl,tgt_test_loader,net)
+        hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net)
         print("Epoch {} HTER {}  acc {}".format(epoch,hter,acc))
 
         if err == -1:
@@ -256,7 +258,7 @@ def train_mann_multi(args):
     # Save Model #
     ##############
     os.makedirs(config['mannnet_outpath'], exist_ok=True)
-    outfile = join(config['mannnet_outpath'], 'mann_net_{:s}_{:s}.pt'.format(config['mann_net']['src_dataset'], config['mann_net']['tgt_dataset']))
+    outfile = join(config['mannnet_outpath'], 'mann_net_{:s}_{:s}_new.pt'.format(config['mann_net']['src_dataset'], config['mann_net']['tgt_dataset']))
     print('Saving to', outfile)
     net.save(outfile)
     print("end")

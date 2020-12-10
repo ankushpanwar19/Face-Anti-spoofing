@@ -39,7 +39,7 @@ base_path_machine0: '/scratch_net/knuffi_third/susaha/apps/'  #* path to dataset
 protocol: 1                                                           
 split: 0
 sel_these_many: 0                                                     
-test_dataset: 'msu' #'replay-attack' #'msu'                                              
+test_dataset: 'replay-attack' #'replay-attack' #'msu'                                              
 eval_type1: 'MsCaOu2RaVal'
 eval_type2: 'MsCaOu2RaTest'
 
@@ -262,7 +262,7 @@ mann_net:
   batch_size_tgt: 32
   batch_size_tgt_test: 32
   batch_size_src: 32
-  lr: 0.00001
+  lr: 0.0001
   loss: sgd
   centroid_fname: 'centroids.npy'
   epochs: 10

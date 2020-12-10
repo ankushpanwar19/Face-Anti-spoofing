@@ -59,8 +59,10 @@ def read_proto_file(mode, protocol, img_path, sel_every, sel_these_many, disc_fr
 def get_part_labels(mode, protocol, proto_path, img_path, sel_every, sel_these_many,
                     disc_frms, split, net_type, small_trainset = False, datasetID = None, num_cls = 2):
     fname = ''
-    if mode == 'train' or mode == 'val':
-        fname = join(proto_path, 'train_label.json')
+    if mode == 'train':
+        fname = join(proto_path, 'train_label_t.json')
+    elif mode=='val':
+        fname = join(proto_path, 'train_label_v.json')
     elif mode == 'test':
         fname = join(proto_path, 'test_label.json')
     # print('>>>>> get_examples_labels_casia.py --> get_part_labels() --> proto-fname: {} '.format(fname))

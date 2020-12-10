@@ -114,6 +114,8 @@ class FaceAntiSpoof(Dataset):
             img_path = configdl[dataset]['full_img_path_test_machine{}'.format(machine)]
         elif mode == 'test' and datasetID == 'ce':
             img_path = configdl[dataset]['full_img_path_test_machine{}'.format(machine)]
+        elif mode == 'val' and datasetID == 'ce':
+            img_path = configdl[dataset]['full_img_path_machine{}'.format(machine)]
         else:
             print('>>>>>>>>>>>>  Error: from data_loader_anet.py --> get_dataset_paths() <<<<<<<<<<<<<<<<<<<<')
             print(
@@ -127,7 +129,7 @@ class FaceAntiSpoof(Dataset):
             img_path = join(img_path, splitStr[1], splitStr[2], splitStr[3], '{}.png'.format(splitStr[4]))
         elif datasetID == 'ou':
             img_path = join(img_path, splitStr[1], '{}.png'.format(splitStr[2]))
-        elif datasetID == 'ce' and mode=='train':
+        elif datasetID == 'ce' and (mode=='train' or mode=='val'):
             img_path = join(img_path, splitStr[1],splitStr[2],'{}.jpg'.format(splitStr[3])) # splitStr[0]='ce'
         elif datasetID == 'ce' and mode=='test':
             img_path = join(img_path, splitStr[1],splitStr[2],'{}.png'.format(splitStr[3])) # splitStr[0]='ce'
