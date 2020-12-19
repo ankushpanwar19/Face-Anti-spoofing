@@ -30,8 +30,8 @@ class DgEncoder(nn.Module):
             'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
         }
 
-        self.gen = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=1000)
-        self.gen.fc=Identity()  # 8631
+        self.encoder = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=1000)
+        self.encoder.fc=Identity()  # 8631
         self.config_resnet_clsnet = config['resent_clsnet']
         self.classifier = ResNetClsNet(self.config_resnet_clsnet, self.debug,'ResNetClsNet')
 
@@ -42,7 +42,7 @@ class DgEncoder(nn.Module):
         pre_state_dict = torch.load(checkpoint_file, map_location=self.device)
         pretrained_weights=list(pre_state_dict['gen'].items())
 
-        mymodel=self.gen.state_dict()
+        mymodel=self.encoder.state_dict()
         count=0
         for key,value in mymodel.items():
             layer_name,weights=pretrained_weights[count]      
@@ -60,20 +60,21 @@ class DgEncoder(nn.Module):
             cls_mymodel[key]=cls_pretrained_wt[count]
             count+=1
         
-        self.gen.load_state_dict(mymodel)
+        self.encoder.load_state_dict(mymodel)
         self.classifier.load_state_dict(cls_mymodel)
         print("***** Weight initialized with DgNet trained previously *****")
 
     def forward(self, images):
-        resnet_out = self.gen(images)
-        resnet_clsnet_out = self.gen.fc(resnet_out) # --- 16*2
+        resnet_out = self.encoder(images)
+        resnet_clsnet_out = self.classifier(resnet_out) # --- 16*2
         softmax=nn.Softmax(dim=1)
         soft_clsnet_out=softmax(resnet_clsnet_out)
         return resnet_out,resnet_clsnet_out,soft_clsnet_out
 
-    def load(self, checkpoint_file,key):
+    def load(self, checkpoint_file,key_encoder,key_cls):
         state_dict = torch.load(checkpoint_file, map_location=self.device)
-        self.gen.load_state_dict(state_dict[key])
+        self.encoder.load_state_dict(state_dict[key_encoder])
+        self.classifier.load_state_dict(state_dict[key_cls])
         
 
 if __name__ == "__main__":

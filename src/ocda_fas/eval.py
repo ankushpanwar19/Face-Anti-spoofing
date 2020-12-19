@@ -15,19 +15,20 @@ from source.models.dg_mann_net import DgMannNet
 from data_loader_anet import get_dataset
 from data_utils import get_domain_list,domain_combined_data_loaders
 
-def eval2(config,val_test_loader,tgt_test_loader,net):
-
-    #**********get data loader for validation get of all 3 set
-
-    # src_val_data_loader=domain_combined_data_loaders(config,configdl,src_domain_list,'test',net='mann_net',type='src')
-
-    print("end")
+def eval2(config,val_test_loader,tgt_test_loader,net,epoch):
+    
     device=config['device']
     net.to(device)
     predict_lst=[]
     label_lst=[]
     total=len(val_test_loader)
+    path=config['mannnet_score_files']
+    
+    val_file=os.path.join(path,"val_score_epoch{}.txt".format(epoch))
+    
     # threshold=0.2974
+    print("******* writing the val Dataset result******")
+    f=open(val_file, 'w')
     with torch.no_grad():
         with tqdm(total=total) as pbar:
             for batch_idx, (data_t, t,labels) in enumerate(val_test_loader):
@@ -52,27 +53,41 @@ def eval2(config,val_test_loader,tgt_test_loader,net):
                 class_enhancer = concept_selector * memory_feature
                 x_t = direct_feature + class_enhancer
 
-                score_t = net.tgt_net.gen.fc(x_t.clone())
+                score_t = net.tgt_net.classifier(x_t.clone())
                 pred_sc=torch.softmax(score_t,dim=1)
                 pred = torch.argmax(pred_sc, dim=1) 
 
                 for i,_ in enumerate(pred):
                     predict_lst.append(pred_sc[i,0].item())
                     label_lst.append(labels[i].item())
+                    f.write("{:.5f},{:d},{:s}\n".format(pred_sc[i,0].item(),labels[i].item(),t[i]))
                 pbar.update(1)
-                # break
 
+                if config['ocda_debug']:
+                    break
+    f.close()
     fpr, tpr, thresholds = metrics.roc_curve(label_lst, predict_lst, pos_label=0)
     fnr=1-tpr
     diff=np.absolute(fpr-fnr)
     idx=diff.argmin()
     thrs=thresholds[idx]
-    print("Val :: HTER :",(fpr[idx]+fnr[idx])/2," Threshold:", thrs)
-
+    hter=(fpr[idx]+fnr[idx])/2
+    print("Val :: HTER :{} Threshold:{} idx:{} FAR:{} FRR:{}".format(hter, thrs,idx,fpr[idx],fnr[idx]))
+    
+    if 'f_summary_file' in config.keys():
+        fsum=open(config["f_summary_file"],'a')
+        fsum.write("\nEpoch:{}\n".format(epoch))
+        fsum.write("Val_HTER:{} Val_thrs:{} Val_FAR:{} Val_FRR:{} idx:{}\n".format(hter, thrs,fpr[idx],fnr[idx],idx))
+        fsum.close()
+        
+    ################### TEST Dataset ######################
     total=len(tgt_test_loader)
     predict_lst=[]
     label_lst=[]
-    # threshold=0.2974
+
+    test_file=os.path.join(path,"test_score_epoch{}.txt".format(epoch))
+    print("******* writing the test Dataset result******")
+    f=open(test_file, 'w')
     with torch.no_grad():
         with tqdm(total=total) as pbar:
             for batch_idx, (data_t, t,labels) in enumerate(tgt_test_loader):
@@ -97,7 +112,7 @@ def eval2(config,val_test_loader,tgt_test_loader,net):
                 class_enhancer = concept_selector * memory_feature
                 x_t = direct_feature + class_enhancer
 
-                score_t = net.tgt_net.gen.fc(x_t.clone())
+                score_t = net.tgt_net.classifier(x_t.clone())
                 pred_sc=torch.softmax(score_t,dim=1)
                 pred = pred_sc[:,0]<thrs
                 pred=pred.double()
@@ -105,8 +120,10 @@ def eval2(config,val_test_loader,tgt_test_loader,net):
                 for i,_ in enumerate(pred):
                     predict_lst.append(pred[i].item())
                     label_lst.append(labels[i].item())
-                pbar.update(1)
+                    f.write("{:.5f},{:},{:d},{:s}\n".format(pred_sc[i,0].item(),int(pred[i].item()),labels[i].item(),t[i]))
                 
+                if config['ocda_debug']:
+                    break
 
     tp, fp, tn, fn=perf_measure(label_lst,predict_lst)
     fpr=fp/(tn+fp) # False rejection rate
@@ -114,8 +131,14 @@ def eval2(config,val_test_loader,tgt_test_loader,net):
     
     hter= (fpr+fnr)/2
     acc=(tp+tn)/(tp+fp+tn+fn)
-    print("Test :: HTER:{} ACC:{}".format(hter,acc))
+    print("Test :: HTER :{} FAR:{} FRR:{}".format(hter,fpr,fnr))
+    f.write("HTER:{},FAR:{},FRR:{},thr:{}".format(hter,fpr,fnr,thrs))
+    f.close()
 
+    if 'f_summary_file' in config.keys():
+        fsum=open(config["f_summary_file"],'a')
+        fsum.write("Test_HTER:{} Test_thrs:{} Test_FAR:{} Test_FRR:{}\n".format(hter,thrs,fpr,fnr))
+        fsum.close()
     return hter,acc
 
 
@@ -239,6 +262,6 @@ if __name__ == "__main__":
 
     num_cls=2
     net = DgMannNet(config,num_cls)
-    net.load(config['mannnet_chkpt_file'])
+    # net.load(config['mannnet_chkpt_file'])
 
-    eval2(config,val_test_loader,tgt_test_loader,net)
+    eval2(config,val_test_loader,tgt_test_loader,net,epoch=0)

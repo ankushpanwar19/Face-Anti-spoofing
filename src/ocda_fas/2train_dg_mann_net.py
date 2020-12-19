@@ -9,17 +9,19 @@ import torch.optim as optim
 import sys
 sys.path.append("src")
 print(os.getcwd())
+from data_utils import make_exp_dir
 from utils import get_config, make_dir
 from utils_dg import get_data_loader as get_dataloader_train,get_part_labels
 from source.models.dg_mann_net import DgMannNet
 from data_loader_anet import get_dataset
 from data_utils import get_domain_list,domain_combined_data_loaders
 from eval import eval2
+# from torch.utils.tensorboard import SummaryWriter
 
 import pdb
 
 
-def train_epoch(loader_src, loader_tgt, net, opt_net, opt_dis, opt_selector, epoch,device, the=0.6):
+def train_epoch(config,loader_src, loader_tgt, net, opt_net, opt_dis, opt_selector,opt_classifier, epoch,device, the=0.6):
    
     log_interval = 10  # specifies how often to display
   
@@ -75,10 +77,13 @@ def train_epoch(loader_src, loader_tgt, net, opt_net, opt_dis, opt_selector, epo
         x_t = direct_feature + class_enhancer
 
         # apply cosine norm classifier
-        score_t = net.tgt_net.gen.fc(x_t.clone())
+        score_t = net.tgt_net.classifier(x_t.clone())
         ###########################
 
-        f = torch.cat((score_s, score_t), 0)
+        if config['mann_net']['discrim_feat']:
+            f = torch.cat((x_s, x_t), 0)
+        else:
+            f = torch.cat((score_s, score_t), 0)
         
         # predict with discriminator
         pred_concat = net.discriminator(f.clone())
@@ -141,12 +146,16 @@ def train_epoch(loader_src, loader_tgt, net, opt_net, opt_dis, opt_selector, epo
             x_t = direct_feature + class_enhancer
 
             # apply cosine norm classifier
-            score_t = net.tgt_net.gen.fc(x_t.clone())
+            score_t = net.tgt_net.classifier(x_t.clone())
 
             ###########################
             # predict with discriinator
             ###########################
-            pred_tgt = net.discriminator(score_t)
+            if config['mann_net']['discrim_feat']:
+                f = x_t
+            else:
+                f = score_t
+            pred_tgt = net.discriminator(f)
             
             # create fake label
             label_tgt = torch.ones(pred_tgt.size(0), requires_grad=False).long().to(device)
@@ -169,9 +178,9 @@ def train_epoch(loader_src, loader_tgt, net, opt_net, opt_dis, opt_selector, epo
         ###########
         if batch_idx % log_interval == 0:
             print(info_str)
-        # break
-    #write the losses: discim and GAN loss to tnsrbrd file    
-    # go for evauation for test set    
+        if config['ocda_debug']:
+            break
+
     return last_update
 
 
@@ -185,11 +194,12 @@ def train_mann_multi(args):
     config_fname='src/configs/train.yaml'
     config= get_config(config_fname)
     config['device']=device
+    config['ocda_debug']=args.debug
     config['net_type']=args.net_type
     config['src_checkpoint_file']=os.path.join(args.experiment_path,args.src_checkpoint_file)
     config['mannnet_outpath']=os.path.join(args.experiment_path,args.mannnet_outpath)
     config['centroids_file']=os.path.join(args.experiment_path,args.centroids_path,config['mann_net']['centroid_fname'])
-
+    config['mannnet_exp_path']=make_exp_dir(config['mannnet_outpath'],"mann_net")
     configdl_fname= 'src/configs/data_loader_dg.yaml'
     configdl= get_config(configdl_fname)
 
@@ -216,7 +226,7 @@ def train_mann_multi(args):
     # Setup networks #
     ###########################
     num_cls=2
-    net = DgMannNet(config,num_cls)
+    net = DgMannNet(config,num_cls,use_init_weights=True,feat_dim=2048,discrim_feat=config['mann_net']['discrim_feat'])
     
     # print network and arguments
     # print(net)
@@ -229,46 +239,68 @@ def train_mann_multi(args):
     weight_decay= config['mann_net']['weight_decay']
     beta1= config['mann_net']['beta1']
     beta2= config['mann_net']['beta2']
-    num_epoch= config['mann_net']['epochs']
+    betas=(beta1,beta2)
 
-    opt_net = optim.Adam(net.tgt_net.parameters(), lr=lr, 
-                         weight_decay=weight_decay, betas=(beta1,beta2))
+    if config['ocda_debug']:
+        num_epoch=1
+    else:
+        num_epoch= config['mann_net']['epochs']
+
+    
+    opt_net = optim.Adam(net.tgt_net.encoder.parameters(), lr=lr, 
+                         weight_decay=weight_decay, betas=betas)
     opt_dis = optim.Adam(net.discriminator.parameters(), lr=lr, 
-                         weight_decay=weight_decay, betas=(beta1,beta2))
+                         weight_decay=weight_decay, betas=betas)
     opt_selector = optim.Adam(net.fc_selector.parameters(), lr=lr*0.1, 
-                              weight_decay=weight_decay, betas=(beta1,beta2))
-    # opt_classifier = optim.Adam(net.classifier.parameters(), lr=lr*0.1, 
-    #                             weight_decay=weight_decay, betas=betas)
+                              weight_decay=weight_decay, betas=betas)
+    opt_classifier = optim.Adam(net.tgt_net.classifier.parameters(), lr=lr*0.1, 
+                                weight_decay=weight_decay, betas=betas)
 
     ##############
     # Train mann #
     #############
-    hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net)
-    print("Start: HTER {}  acc {}".format(hter,acc))
-    for epoch in range(num_epoch):
-        err = train_epoch(src_data_loader, tgt_train_loader, net, opt_net, opt_dis, opt_selector, epoch,config['device']) 
 
-        hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net)
+    #folder creation
+    checkpoint_path=os.path.join(config['mannnet_exp_path'],'checkpoints')
+    score_files=os.path.join(config['mannnet_exp_path'],'score_files')
+    os.mkdir(checkpoint_path)
+    os.mkdir(score_files)
+    config['mannnet_score_files']=score_files
+
+    f_summary_file=os.path.join(config['mannnet_exp_path'],"summary.txt")
+    config["f_summary_file"]=f_summary_file
+
+    # tnsorboard_writer=SummaryWriter(log_dir=)
+    hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,-1)
+    print("Start: HTER {}  acc {}".format(hter,acc))
+
+    for epoch in range(num_epoch):
+        err = train_epoch(config,src_data_loader, tgt_train_loader, net, opt_net, opt_dis, opt_selector, opt_classifier,epoch,config['device']) 
+
+        hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,epoch)
         print("Epoch {} HTER {}  acc {}".format(epoch,hter,acc))
 
         if err == -1:
             print("No suitable discriminator")
-       
-    ##############
-    # Save Model #
-    ##############
-    os.makedirs(config['mannnet_outpath'], exist_ok=True)
-    outfile = join(config['mannnet_outpath'], 'mann_net_{:s}_{:s}_new.pt'.format(config['mann_net']['src_dataset'], config['mann_net']['tgt_dataset']))
-    print('Saving to', outfile)
-    net.save(outfile)
+
+        ##############
+        # Save Model #
+        ##############
+        outfile = join(checkpoint_path, 'mann_net_{:s}_{:s}_epoch{:02d}.pt'.format(config['mann_net']['src_dataset'], config['mann_net']['tgt_dataset'],epoch))
+        print('Saving to', outfile)
+        net.save(outfile)
+    
+    
+    
     print("end")
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--net_type', type=str, default='lstmmot')
+    parser.add_argument('--debug', type=bool, default=False)
     parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
     parser.add_argument('--src_checkpoint_file', type=str, default='checkpoints/net_00039439.pt')
-    parser.add_argument('--mannnet_outpath', type=str, default='ocda_fas_files')
+    parser.add_argument('--mannnet_outpath', type=str, default='ocda_fas_files/mann_net')
     parser.add_argument('--centroids_path', type=str, default='ocda_fas_files')
 
     args = parser.parse_args()

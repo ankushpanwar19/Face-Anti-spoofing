@@ -545,7 +545,7 @@ def get_scheduler(optimizer, config, net_type, iterations=-1):
 
 def get_config(config):
     with open(config, 'r') as stream:
-        return yaml.load(stream)
+        return yaml.load(stream,Loader=yaml.FullLoader)
 
 def make_dir(dirp):
     if not os.path.exists(dirp):

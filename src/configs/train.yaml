@@ -259,11 +259,11 @@ mann_net:
   src_dataset: MsCaOu
   tgt_dataset: Ce
 
-  batch_size_tgt: 32
+  batch_size_tgt: 16
   batch_size_tgt_test: 32
-  batch_size_src: 32
+  batch_size_src: 16
+  discrim_feat: True # for deciding input to discriminator
   lr: 0.0001
-  loss: sgd
   centroid_fname: 'centroids.npy'
   epochs: 10
   beta1: 0.9
@@ -309,4 +309,18 @@ scheduled_mann_net:
   schedule_strategy: 'shift' #'expand'
   schedule_power: 0.3
   
+da_baseline:
+  src_dataset: MsCaOu
+  tgt_dataset: Ce
 
+  batch_size_tgt: 16
+  batch_size_src: 16
+  lr: 0.001
+  loss: adam
+  epochs: 20
+  beta1: 0.9
+  beta2: 0.999
+  weight_decay: 0.00001
+  feat_dim: 2048
+
+  

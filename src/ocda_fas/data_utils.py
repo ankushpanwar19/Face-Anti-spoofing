@@ -62,9 +62,9 @@ def domain_combined_data_loaders(config,configdl,domain_list,mode='train',net='m
     print("batch_size",batch_size)
     
     comb_dataset=get_multi_domain_dataset(config,configdl,domain_list,mode,drop_last)
-    
+    print("Workers:",config['num_workers'])
     combined_data_loader=torch.utils.data.DataLoader(comb_dataset, batch_size=batch_size, shuffle=shuffle,drop_last=drop_last,num_workers=config['num_workers'])
-
+    # print("next reach")
 
     return combined_data_loader 
 
@@ -170,4 +170,13 @@ class DomainScheduledSampler(Sampler):
         return len(self.selected)
 
 
-
+def make_exp_dir(sub_base_path,net_type):
+    if not os.path.isdir(sub_base_path):
+        os.mkdir(sub_base_path)
+    exp_list = [f for f in os.listdir(sub_base_path) if 'exp' in f]
+    if not exp_list:
+        exp_path=join(sub_base_path, '{}_exp_000'.format(net_type))
+    else:
+        exp_path=join(sub_base_path, '{:s}_exp_{:03d}'.format(net_type,len(exp_list)))
+    os.mkdir(exp_path)
+    return exp_path

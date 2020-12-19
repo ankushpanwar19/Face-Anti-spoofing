@@ -4,19 +4,19 @@ import torch.nn as nn
 # from .utils import register_model, get_model
 from . import cos_norm_classifier
 import os
-from .dg_resnet import DgEncoder
+from .dg_resnet2 import DgEncoder
 
 
 class DgMannNet(nn.Module):
 
     """Defines a Dynamic Meta-Embedding Network."""
 
-    def __init__(self,config, num_cls=2, use_init_weights=True,feat_dim=2048):
+    def __init__(self,config, num_cls=2, use_init_weights=True,feat_dim=2048,discrim_feat=False):
 
         super(DgMannNet, self).__init__()
 
         self.device=config['device']
-        self.discrim_feat=False
+        self.discrim_feat=discrim_feat
         self.num_cls = num_cls
         self.feat_dim = feat_dim
         self.cls_criterion = nn.CrossEntropyLoss()
@@ -34,7 +34,10 @@ class DgMannNet(nn.Module):
         else:
             print('MannNet is not initialized with weights.')
 
-        input_dim = self.num_cls
+        if self.discrim_feat:
+            input_dim = self.feat_dim
+        else:
+            input_dim=self.num_cls
 
         self.discriminator = nn.Sequential(
             nn.Linear(input_dim, 500),
@@ -73,14 +76,16 @@ class DgMannNet(nn.Module):
     def save(self, out_path):
 
         torch.save({
-                'tgt_gen': self.tgt_net.gen.state_dict(),
-                'src_gen': self.src_net.gen.state_dict(),
+                'tgt_encoder': self.tgt_net.encoder.state_dict(),
+                'tgt_clf': self.tgt_net.classifier.state_dict(),
+                'src_encoder': self.src_net.encoder.state_dict(),
+                'src_clf': self.src_net.classifier.state_dict(),
                 'discriminator': self.discriminator.state_dict()
                 }, out_path)
 
     def load(self,checkpoint_file):
-        self.src_net.load(checkpoint_file,'src_gen')
-        self.tgt_net.load(checkpoint_file,'tgt_gen')
+        self.src_net.load(checkpoint_file,'src_encoder','src_clf')
+        self.tgt_net.load(checkpoint_file,'tgt_encoder','tgt_clf')
         state_dict = torch.load(checkpoint_file, map_location=self.device)
         self.discriminator.load_state_dict(state_dict['discriminator'])
         print('MannNet is initialized with previously trained MannNet.')
