@@ -6,3 +6,4 @@ conda activate .fas
 # python -u src/ocda_fas/2train_dg_mann_net.py
 # python -u src/ocda_fas/eval.py
 python src/ocda_fas/DA_baseline.py
+# python src/ocda_fas/test.py

@@ -9,7 +9,7 @@ eval_at_first_iter: True
 set_seed: False
 exp_name_prefix: lstmmot_exp_001                                      
 
-num_workers: 8
+num_workers: 0
 
 # --- Train options ---
 mute_cnn: False # if True, then CNN part is not trained
@@ -312,15 +312,23 @@ scheduled_mann_net:
 da_baseline:
   src_dataset: MsCaOu
   tgt_dataset: Ce
-
   batch_size_tgt: 16
   batch_size_src: 16
-  lr: 0.001
-  loss: adam
-  epochs: 20
-  beta1: 0.9
-  beta2: 0.999
-  weight_decay: 0.00001
-  feat_dim: 2048
+  batch_size_tgt_test: 16
+  src:
+    lr: 0.001
+    loss: adam
+    epochs: 2
+    beta1: 0.9
+    beta2: 0.999
+    weight_decay: 0.00001
+  tgt:
+    lr: 0.001
+    loss: adam
+    epochs: 2
+    beta1: 0.9
+    beta2: 0.999
+    weight_decay: 0.00001
+    da_lambda: 0.2
 
   

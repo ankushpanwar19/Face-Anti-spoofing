@@ -271,8 +271,8 @@ def train_mann_multi(args):
     config["f_summary_file"]=f_summary_file
 
     # tnsorboard_writer=SummaryWriter(log_dir=)
-    hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,-1)
-    print("Start: HTER {}  acc {}".format(hter,acc))
+    # hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,-1)
+    # print("Start: HTER {}  acc {}".format(hter,acc))
 
     for epoch in range(num_epoch):
         err = train_epoch(config,src_data_loader, tgt_train_loader, net, opt_net, opt_dis, opt_selector, opt_classifier,epoch,config['device']) 

@@ -31,6 +31,7 @@ class FaceAntiSpoof(Dataset):
 
     def __getitem__(self, idx):
         # t = time.time()
+        # print(idx)
         ID = self.part[idx]
         imfname, facial_text_file, dataset = self.get_dataset_paths(self.part[idx], self.config_dl, self.machine, self.mode)
         im = Image.open(imfname)
