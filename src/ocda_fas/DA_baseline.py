@@ -10,8 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 sys.path.append("src")
 
 from utils import get_config, make_dir
-from data_utils import make_exp_dir
-from ocda_fas.data_utils import get_domain_list,domain_combined_data_loaders
+from ocda_fas.utils.data_utils import get_domain_list,domain_combined_data_loaders,make_exp_dir
 from source.algorithms.baseline import DABaselineSrc,DABaselineTgt_ADDA,DABaselineTgt_GRL
 
 def baseline_src_eval(args):

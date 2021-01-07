@@ -3,8 +3,10 @@ import numpy as np
 from tqdm import tqdm
 import torch
 
-from data_utils import get_domain_list,domain_combined_data_loaders
-from source.models.dg_resnet import DgEncoder
+import sys
+sys.path.append("src")
+from ocda_fas.utils.data_utils import get_domain_list,domain_combined_data_loaders
+from ocda_fas.source.models.dg_resnet import DgEncoder
 
 
 def class_count (data):
