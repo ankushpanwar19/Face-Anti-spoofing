@@ -2,6 +2,7 @@ import os
 from os.path import join
 import numpy as np
 import torch
+from torch import nn
 from torch.utils.data.sampler import Sampler
 
 import sys
@@ -52,7 +53,10 @@ def domain_data_loaders(config,configdl,domain_list,mode='train'):
 def domain_combined_data_loaders(config,configdl,domain_list,mode='train',net='mann_net',type='src',shuffle=True,drop_last=True):
     
     if type=='src':
-        batch_size=config[net]['batch_size_src']
+        if mode=='train':
+            batch_size=config[net]['batch_size_src']
+        else:
+            batch_size=config[net]['batch_size_src_test'] 
     else:
         if mode=='train':
             batch_size=config[net]['batch_size_tgt']
@@ -63,7 +67,7 @@ def domain_combined_data_loaders(config,configdl,domain_list,mode='train',net='m
     
     comb_dataset=get_multi_domain_dataset(config,configdl,domain_list,mode,drop_last)
     print("Workers:",config['num_workers'])
-    combined_data_loader=torch.utils.data.DataLoader(comb_dataset, batch_size=batch_size, shuffle=shuffle,drop_last=drop_last,num_workers=config['num_workers'])
+    combined_data_loader=torch.utils.data.DataLoader(comb_dataset, batch_size=batch_size, shuffle=shuffle,drop_last=drop_last,num_workers=config['num_workers'],pin_memory=True)
     # print("next reach")
 
     return combined_data_loader 
@@ -180,3 +184,12 @@ def make_exp_dir(sub_base_path,net_type):
         exp_path=join(sub_base_path, '{:s}_exp_{:03d}'.format(net_type,len(exp_list)))
     os.mkdir(exp_path)
     return exp_path
+
+
+class MyDataParallel(nn.DataParallel):
+
+    def __getattr__(self, name):
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            return getattr(self.module, name)

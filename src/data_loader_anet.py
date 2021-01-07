@@ -171,13 +171,19 @@ class FaceAntiSpoof(Dataset):
         x2 = None
         y2 = None
         if "CelebA" in facial_text_file:
-            str = str[0].strip().split()
-            x1 = float(str[0].strip())
-            y1 = float(str[1].strip())
-            w = float(str[2].strip())
-            h = float(str[3].strip())
-            x2=x1+w
-            y2=y1+h
+            if len(str)>0:
+                str = str[0].strip().split()
+                x1 = float(str[0].strip())
+                y1 = float(str[1].strip())
+                w = float(str[2].strip())
+                h = float(str[3].strip())
+                x2=x1+w
+                y2=y1+h
+            else:
+                x1 = -1
+                y1 = -1
+                x2 = -1
+                y2 = -1
         elif str:
             str = str[0].strip()
             str = str.split(',')

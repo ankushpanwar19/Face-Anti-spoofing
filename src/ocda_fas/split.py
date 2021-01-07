@@ -3,7 +3,7 @@ import os
 from sklearn.model_selection import train_test_split
 import json
 
-file = "/scratch_net/moustachos/apanwar/CelebA-Spoof/CelebA_Spoof/metas/protocol1/train_label.json"
+file = "/scratch_net/moustachos/apanwar/CelebA-Spoof/CelebA_Spoof/metas/intra_test/train_label.json"
 
 with open(file) as f:
   data = json.load(f)
@@ -19,6 +19,7 @@ for p,v in data.items():
         live_cnt+=1
     else:
         spoof_cnt+=1
+
 total=len(data)
 print("total:{} live:{} ({}) spoof:{} ({})".format(total,live_cnt,live_cnt/total,spoof_cnt,spoof_cnt/total))
 

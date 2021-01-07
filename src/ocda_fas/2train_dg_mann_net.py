@@ -208,9 +208,9 @@ def train_mann_multi(args):
 
     #  source and target Data loaders
     # print
-    src_data_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='train',net='mann_net',type='src')
+    src_data_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='test',net='mann_net',type='src')
 
-    tgt_train_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='train',net='mann_net',type='tgt')
+    tgt_train_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='test',net='mann_net',type='tgt')
 
     tgt_val_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='val',net='mann_net',type='tgt')
 

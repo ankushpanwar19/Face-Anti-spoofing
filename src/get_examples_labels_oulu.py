@@ -140,7 +140,8 @@ def get_examples_labels(datset_path, mode, protocol, split, sel_every, sel_these
                 sel_these_many = 0
         elif protocol == 5:
             disc_frms = 999999999999999
-            sel_these_many = 33
+            # sel_these_many = 33 # I commented it out
+            sel_these_many = 0
     part, labels, gtFlags, scores, num_exmps = get_part_labels(mode, protocol, proto_path, img_path, sel_every,
                                                                sel_these_many, disc_frms, split, net_type,
                                                                eval_on_oulu_devset = eval_on_oulu_devset,

@@ -31,7 +31,7 @@ def eval2(config,val_test_loader,tgt_test_loader,net,epoch):
     f=open(val_file, 'w')
     with torch.no_grad():
         with tqdm(total=total) as pbar:
-            for batch_idx, (data_t, t,labels) in enumerate(val_test_loader):
+            for batch_idx, (data_t, path,labels) in enumerate(val_test_loader):
 
                 data_t = data_t.to(device)
                 data_t.require_grad = False
@@ -60,7 +60,7 @@ def eval2(config,val_test_loader,tgt_test_loader,net,epoch):
                 for i,_ in enumerate(pred):
                     predict_lst.append(pred_sc[i,0].item())
                     label_lst.append(labels[i].item())
-                    f.write("{:.5f},{:d},{:s}\n".format(pred_sc[i,0].item(),labels[i].item(),t[i]))
+                    f.write("{:.5f},{:d},{:s}\n".format(pred_sc[i,0].item(),labels[i].item(),path[i]))
                 pbar.update(1)
 
                 if config['ocda_debug']:

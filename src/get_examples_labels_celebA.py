@@ -55,16 +55,44 @@ def read_proto_file(mode, protocol, img_path, sel_every, sel_these_many, disc_fr
                 num_spoof_exmps+=1
     return part, labels, gtFlags, scores, num_live_exmps, num_spoof_exmps
 
+def read_proto_file_txt(mode, protocol, img_path, sel_every, sel_these_many, disc_frms, fname, part, labels, gtFlags, scores, split, net_type, datasetID = None, num_cls = 2):
+    '''currently only for train
+    =
+    '''
+    num_live_exmps = 0
+    num_spoof_exmps = 0
+    if datasetID:
+        dsID = datasetID
+    else:
+        dsID = 'none'
+    with open(fname) as f:
+        for line in f:
+            # print(imgpath)
+            sstr = line.split(' ')
+            imgpath=sstr[0]
+            label_id=int(sstr[1].strip())
+            path_split=splitext(imgpath)[0].split('/') 
+            path_id=join('ce',path_split[2],path_split[3],path_split[4]) #path_id='4980/spoof/000003' (removed jpg)
+            part[mode].append(path_id)
+            # label_id=files[imgpath][43]
+            labels[path_id]=label_id
+            gtFlags[path_id]=label_id
+            if label_id==0:
+                num_live_exmps+=1
+            else:
+                num_spoof_exmps+=1
+    return part, labels, gtFlags, scores, num_live_exmps, num_spoof_exmps
+
 
 def get_part_labels(mode, protocol, proto_path, img_path, sel_every, sel_these_many,
                     disc_frms, split, net_type, small_trainset = False, datasetID = None, num_cls = 2):
     fname = ''
     if mode == 'train':
-        fname = join(proto_path, 'train_label_t.json')
+        fname = join(proto_path, 'train_label_t.txt')
     elif mode=='val':
-        fname = join(proto_path, 'train_label_v.json')
+        fname = join(proto_path, 'train_label_v.txt')
     elif mode == 'test':
-        fname = join(proto_path, 'test_label.json')
+        fname = join(proto_path, 'test_label.txt')
     # print('>>>>> get_examples_labels_casia.py --> get_part_labels() --> proto-fname: {} '.format(fname))
     # print('Reading protocol file := [{}]'.format(fname))
     part = {}
@@ -73,7 +101,7 @@ def get_part_labels(mode, protocol, proto_path, img_path, sel_every, sel_these_m
     scores = {}
     gtFalgs = {}
     part, labels, gtFalgs, scores, num_live_exmps, num_spoof_exmps = \
-        read_proto_file(mode, protocol, img_path, sel_every, sel_these_many, disc_frms, fname, part, labels, gtFalgs, scores, split, net_type, datasetID = datasetID, num_cls = num_cls)
+        read_proto_file_txt(mode, protocol, img_path, sel_every, sel_these_many, disc_frms, fname, part, labels, gtFalgs, scores, split, net_type, datasetID = datasetID, num_cls = num_cls)
     num_examples = num_live_exmps + num_spoof_exmps
     print('Number of {} examples {}; num live {}; num spoof {}'.format(mode, str(num_examples), str(num_live_exmps), str(num_spoof_exmps)))
     assert(len(part[mode]) == num_examples )
@@ -94,7 +122,9 @@ def get_examples_labels(datset_path, mode, protocol, split, sel_every, sel_these
     else:
         pass
     proto_path = ''
-    if (protocol == 1):
+    if (protocol == 0):
+        proto_path = join(datset_path, 'metas', 'intra_test','myprotocol')
+    elif (protocol == 1):
         proto_path = join(datset_path, 'metas', 'protocol{}'.format(protocol))
     part, labels, gtFlags, scores, num_exmps = get_part_labels\
         (mode, protocol, proto_path, img_path, sel_every, sel_these_many, disc_frms,
@@ -107,7 +137,7 @@ if __name__ == "__main__":
     
     datset_path='/scratch/apanwar/CelebA-Spoof/CelebA_Spoof/'
     mode='train'
-    protocol=1 
+    protocol=0
     split=0
     sel_every=0 
     sel_thesemany=0,

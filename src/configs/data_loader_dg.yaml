@@ -89,5 +89,5 @@ celebA:
   sel_every: 1
   sel_these_many: 0 
   sel_every_mergeall: 5
-  proto: 1
+  proto: 0
   split: 0

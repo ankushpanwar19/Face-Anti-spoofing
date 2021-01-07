@@ -9,7 +9,7 @@ eval_at_first_iter: True
 set_seed: False
 exp_name_prefix: lstmmot_exp_001                                      
 
-num_workers: 0
+num_workers: 12
 
 # --- Train options ---
 mute_cnn: False # if True, then CNN part is not trained
@@ -262,6 +262,7 @@ mann_net:
   batch_size_tgt: 16
   batch_size_tgt_test: 32
   batch_size_src: 16
+  batch_size_src_test: 32
   discrim_feat: True # for deciding input to discriminator
   lr: 0.0001
   centroid_fname: 'centroids.npy'
@@ -312,23 +313,30 @@ scheduled_mann_net:
 da_baseline:
   src_dataset: MsCaOu
   tgt_dataset: Ce
-  batch_size_tgt: 16
-  batch_size_src: 16
-  batch_size_tgt_test: 16
+  batch_size_tgt: 32
+  batch_size_src: 32
+  batch_size_tgt_test: 32
+  batch_size_src_test: 32
   src:
     lr: 0.001
     loss: adam
-    epochs: 2
+    epochs: 5
     beta1: 0.9
     beta2: 0.999
     weight_decay: 0.00001
   tgt:
-    lr: 0.001
+    lr_encoder: 0.0001
+    lr_discrim: 0.0001
     loss: adam
-    epochs: 2
+    epochs: 10
     beta1: 0.9
     beta2: 0.999
     weight_decay: 0.00001
-    da_lambda: 0.2
+    da_lambda: 0.5
+    da_lambda_type: const # constant vary
+    dom_loss_wt: 10.0
+    lr_scheduler:
+      decay_iter: 1
+      gamma: 0.9 # constant vary
 
   
