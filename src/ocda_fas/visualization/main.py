@@ -15,50 +15,16 @@ from bokeh.models import WheelZoomTool, SaveTool, LassoSelectTool
 
 
 N_BINS_CHANNEL = 50
-def update_callback(attr, old, new):
-   if not new:
-       return
-   channel_hist_new = np.zeros((len(new), 3, N_BINS_CHANNEL))
-   i = 0
-   for idx, f in enumerate(glob.glob("static1/*.jpg")):
-      
-       if not idx in new:
-           continue
-       else:
-         
-           image = Image.open(os.path.abspath(f))
-           image_np = (np.array(image)).reshape(-1,3)
-           for channel_id in range(3):
-               histogram, bin_edges = np.histogram(image_np[:, channel_id], bins=N_BINS_CHANNEL, range=(0, 256),density=True)
-               channel_hist_new[i][channel_id] = histogram
-           i = i +1
-   
-   aggre_channel_histo_new = channel_hist_new.sum(axis=0)
-   
-   norm_cons = max(aggre_channel_histo_new[0]) - min(aggre_channel_histo_new[0])
-   if not norm_cons :
-       aggre_channel_histo_new[0] = ((aggre_channel_histo_new[0] - min(aggre_channel_histo_new[0])) / norm_cons)       
- 
-   norm_cons = max(aggre_channel_histo_new[1]) - min(aggre_channel_histo_new[1])
-   if not norm_cons :
-       aggre_channel_histo_new[1] = ((aggre_channel_histo_new[1] - min(aggre_channel_histo_new[1])) / norm_cons)  #cshannel--2  
-   
-   norm_cons = max(aggre_channel_histo_new[2]) - min(aggre_channel_histo_new[2])
-   if not norm_cons :
-       aggre_channel_histo_new[2] = ((aggre_channel_histo_new[2] - min(aggre_channel_histo_new[2])) / norm_cons)   #channel--3 
-        
-   CDS_channel_histo_new = ColumnDataSource(dict(
-                          idx = np.arange(50),
-                          ch1  =  aggre_channel_histo_new[0],
-                          ch2  =  aggre_channel_histo_new[1],
-                          ch3  =  aggre_channel_histo_new[2]
-                          ))
-   
-   CDS_channel_histo.data.update(CDS_channel_histo_new.data)
-   return
 
 # Fetch the number of images using glob
-N = len(glob.glob("static1/*.jpg"))
+#my_root = "C:/Users/Pratyush/SWITCHdrive/tsne/static"
+my_root =  "C:/Users/Pratyush/SWITCHdrive/samples"
+my_exts = ['*.jpg', 'jpeg', '*.png']
+files = [glob.glob(my_root + '/**/'+ x, recursive=True) for x in my_exts]  
+flattened = [val for sublist in files for val in sublist]
+
+N = len(flattened)
+#N = len(glob.glob("static/*.jpg"))
 
 # root directory of  app to generate the image URL for the bokeh server
 ROOT = os.path.split(os.path.abspath("."))[1] + "/"
@@ -79,7 +45,8 @@ channel_hist = np.zeros((N, 3, N_BINS_CHANNEL))
 url = []
 image_list = [[] for i in range(N)]
 # Compute the color and channel histograms
-for idx, f in enumerate(glob.glob("static1/*.jpg")):
+for idx, f in enumerate(glob.glob(my_root + '/**/'+ "*.jpg", recursive=True)):
+#for idx, f in enumerate(glob.glob("static/*.jpg")):
     image_list[idx].append (f)
     image = Image.open(os.path.abspath(f))
     image_list[idx].append (image)
@@ -99,7 +66,7 @@ for idx, f in enumerate(glob.glob("static1/*.jpg")):
         channel_hist[idx][channel_id] = histogram
     
 #calculating tSNE dimensionality reduction
-tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=250)
 tsne_results = tsne.fit_transform(color_hist)
 
 #calculating pca dimensionality reduction
@@ -149,12 +116,18 @@ CDS_channel_histo = ColumnDataSource(dict(
 # Connect the on_change routine of the selected attribute of the dimensionality reduction ColumnDataSource with a
 # callback/update function to recompute the channel histogram.
 #calling the onchange functionality
-CDS_color_histo.selected.on_change('indices',update_callback)
+#CDS_color_histo.selected.on_change('indices',update_callback)
 # Construct a layout and use curdoc() to add it to your document.
 curdoc().add_root(row(p1))
 
+#TO RUN---
 # use the command below in the folder of your python file to start a bokeh directory app
-# python file must be named main.py and images have to be in a subfolder name "static"
+# python file must be named main.py and provide the path to variable my_root. 
 
 # bokeh serve --show .
 # python -m bokeh serve --show .
+# wait fr it to run, takes time depending on no. of samples.
+# the no. of iterations and perplexity needs to be tuned as per need and no. of samples on line 110
+
+#doubt
+#dont know why but KL divergence value of 251th iter is very very high. But it should nopt be a problem since only 250 iters are taken into account
