@@ -14,7 +14,7 @@ class DgMannNet(nn.Module):
     def __init__(self,config, num_cls=2, use_init_weights=True,feat_dim=2048,discrim_feat=False):
 
         super(DgMannNet, self).__init__()
-
+        self.config=config
         self.device=config['device']
         self.discrim_feat=discrim_feat
         self.num_cls = num_cls
@@ -69,9 +69,14 @@ class DgMannNet(nn.Module):
 
     def load_src_net(self, checkpoint_file):
         """Initialize source and target with source weights."""
-        self.src_net.load_init_weights(checkpoint_file)
-        self.tgt_net.load_init_weights(checkpoint_file)
-        print('MannNet src and tgt net is initialized with source net.')
+        if self.config['mann_net']['pretrained']=='dg':
+            self.src_net.load_init_weights(checkpoint_file)
+            self.tgt_net.load_init_weights(checkpoint_file)
+            print("Intialized with Dg net weights")
+        elif self.config['mann_net']['pretrained']=='src_net':
+            self.src_net.load(checkpoint_file,'encoder','classifier')
+            self.tgt_net.load(checkpoint_file,'encoder','classifier')
+            print("Intialized with src net weights")
 
     def save(self, out_path):
 

@@ -50,7 +50,7 @@ def domain_data_loaders(config,configdl,domain_list,mode='train'):
 
     return data_loaders,epoch_sizes,iters
 
-def domain_combined_data_loaders(config,configdl,domain_list,mode='train',net='mann_net',type='src',shuffle=True,drop_last=True):
+def domain_combined_data_loaders(config,configdl,domain_list,mode='train',net='mann_net',type='src',shuffle=True,drop_last=True,data_filter=''):
     
     if type=='src':
         if mode=='train':
@@ -65,14 +65,14 @@ def domain_combined_data_loaders(config,configdl,domain_list,mode='train',net='m
 
     print("batch_size",batch_size)
     
-    comb_dataset=get_multi_domain_dataset(config,configdl,domain_list,mode,drop_last)
+    comb_dataset=get_multi_domain_dataset(config,configdl,domain_list,mode,drop_last,data_filter)
     print("Workers:",config['num_workers'])
     combined_data_loader=torch.utils.data.DataLoader(comb_dataset, batch_size=batch_size, shuffle=shuffle,drop_last=drop_last,num_workers=config['num_workers'],pin_memory=True)
     # print("next reach")
 
     return combined_data_loader 
 
-def get_domain_dataset(config,configdl,dataset,mode='train',small_trainset=False,drop_last=True):
+def get_domain_dataset(config,configdl,dataset,mode='train',small_trainset=False,drop_last=True,data_filter=''):
     '''
     get torch dataset object for given data
     '''
@@ -80,7 +80,8 @@ def get_domain_dataset(config,configdl,dataset,mode='train',small_trainset=False
     num_workers = config['num_workers']
     inp_dim = (config['inp_dim'], config['inp_dim'])
 
-    part_all, labels_all, num_exmps = get_part_labels(config, configdl, mode, small_trainset = small_trainset, drop_last = drop_last, dataset_name=dataset)
+    mode_datafilter=mode+data_filter
+    part_all, labels_all, num_exmps = get_part_labels(config, configdl, mode_datafilter, small_trainset = small_trainset, drop_last = drop_last, dataset_name=dataset)
 
     params = {'app_feats': config['app_feats'],
               'shuffle': True,
@@ -94,7 +95,7 @@ def get_domain_dataset(config,configdl,dataset,mode='train',small_trainset=False
 
     return dataset
 
-def get_multi_domain_dataset(config,configdl,domain_list,mode='train',drop_last=True):
+def get_multi_domain_dataset(config,configdl,domain_list,mode='train',drop_last=True,data_filter=''):
     '''
     get multi dataset object for given data
     '''
@@ -105,11 +106,11 @@ def get_multi_domain_dataset(config,configdl,domain_list,mode='train',drop_last=
 
         if domain != 'celebA':
             if mode=='train':
-                dataset=get_domain_dataset(config,configdl,domain,mode=mode,small_trainset=False,drop_last=drop_last)
+                dataset=get_domain_dataset(config,configdl,domain,mode=mode,small_trainset=False,drop_last=drop_last,data_filter=data_filter)
             else:
                 dataset=get_domain_eval_dataset(config,configdl,domain,mode=mode,small_trainset=False,drop_last=drop_last)
         else:
-            dataset=get_domain_dataset(config,configdl,domain,mode=mode,small_trainset=False,drop_last=drop_last)
+            dataset=get_domain_dataset(config,configdl,domain,mode=mode,small_trainset=False,drop_last=drop_last,data_filter=data_filter)
 
 
         dataset_list.append(dataset)

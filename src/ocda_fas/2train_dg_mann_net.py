@@ -9,29 +9,39 @@ import torch.optim as optim
 import sys
 sys.path.append("src")
 print(os.getcwd())
-from data_utils import make_exp_dir
+from ocda_fas.utils.data_utils import make_exp_dir,get_domain_list,domain_combined_data_loaders
 from utils import get_config, make_dir
 from utils_dg import get_data_loader as get_dataloader_train,get_part_labels
 from source.models.dg_mann_net import DgMannNet
 from data_loader_anet import get_dataset
-from data_utils import get_domain_list,domain_combined_data_loaders
-from eval import eval2
-# from torch.utils.tensorboard import SummaryWriter
+from source.algorithms.eval import eval2
+from torch.utils.tensorboard import SummaryWriter
 
 import pdb
 
 
-def train_epoch(config,loader_src, loader_tgt, net, opt_net, opt_dis, opt_selector,opt_classifier, epoch,device, the=0.6):
+def train_epoch(config,loader_src, loader_tgt, net, opt_net, opt_dis, opt_selector,opt_classifier, epoch,writer,device, the=0.6):
    
-    log_interval = 10  # specifies how often to display
+    print_interval = 10 # specifies how often to display
+    tnsorboard_logging_interval = 1000  
   
     N = min(len(loader_src.dataset), len(loader_tgt.dataset)) 
+    dataloader_len = min(len(loader_src), len(loader_tgt)) 
     joint_loader = zip(loader_src, loader_tgt)
-      
+
+    print(device)  
     net.train()
-   
+    net.to(device)
     last_update = -1
 
+    running_loss_discrim=0.0
+    running_loss_gan=0.0
+    running_acc_discrim=0.0
+    count_discrim_update=0
+    count_tgtnet_update=0
+
+    training_set="Training_"+config['mann_net']['src_dataset'] +"_"+config['mann_net']['tgt_dataset']
+    print (training_set)
     for batch_idx, ((data_s, _,_), (data_t,_, _)) in enumerate(joint_loader):
         
         # log basic mann train info
@@ -54,7 +64,6 @@ def train_epoch(config,loader_src, loader_tgt, net, opt_net, opt_dis, opt_select
 
         # zero gradients for optimizer
         opt_dis.zero_grad()
-        net.to(device)
         # extract and concat features
         x_s,score_s,prob_s = net.src_net(data_s.clone())
         x_t,score_t,prob_t = net.tgt_net(data_t.clone())
@@ -107,6 +116,10 @@ def train_epoch(config,loader_src, loader_tgt, net, opt_net, opt_dis, opt_select
         # log discriminator update info
         info_str += " acc: {:0.1f} D: {:.3f}".format(acc.item()*100, loss_dis.item())
 
+        #running loss and acc for disriminator
+        running_loss_discrim+=loss_dis
+        running_acc_discrim+=acc
+        count_discrim_update+=1
         ###########################
         # Optimize target network #
         ###########################
@@ -172,12 +185,31 @@ def train_epoch(config,loader_src, loader_tgt, net, opt_net, opt_dis, opt_select
 
             # log net update info
             info_str += " G: {:.3f}".format(loss_gan_t.item()) 
-
+            
+            #running loss for TGT NET with gan loss
+            running_loss_gan+=loss_dis
+            count_tgtnet_update+=1
+            
         ###########
         # Logging #
         ###########
-        if batch_idx % log_interval == 0:
+        if (batch_idx+1) % print_interval == 0:
             print(info_str)
+
+        if (batch_idx+1) % tnsorboard_logging_interval == 0:
+            disc_loss=running_loss_discrim/count_discrim_update
+            disc_acc=running_acc_discrim/count_discrim_update
+            gan_loss=0.0
+            if count_tgtnet_update>0:
+                gan_loss=running_loss_gan/(count_tgtnet_update)
+            writer.add_scalar(training_set+'/Discrim_loss', disc_loss, (epoch*dataloader_len)+batch_idx)
+            writer.add_scalar(training_set+'/Gan_loss', gan_loss, (epoch*dataloader_len)+batch_idx)
+            writer.add_scalar(training_set+'/Acc_domain', disc_acc, (epoch*dataloader_len)+batch_idx)
+
+            running_loss_discrim=0.0
+            running_loss_gan=0.0
+            running_acc_discrim=0.0
+    
         if config['ocda_debug']:
             break
 
@@ -208,17 +240,17 @@ def train_mann_multi(args):
 
     #  source and target Data loaders
     # print
-    src_data_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='test',net='mann_net',type='src')
+    src_data_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='train',net='mann_net',type='src')
 
-    tgt_train_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='test',net='mann_net',type='tgt')
+    tgt_train_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='train',net='mann_net',type='tgt')
 
     tgt_val_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='val',net='mann_net',type='tgt')
 
     tgt_test_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='test',net='mann_net',type='tgt')
 
-    if (len(src_data_loader.dataset)/ len(tgt_train_loader.dataset)< 0.7):
-        comb_dataset = torch.utils.data.ConcatDataset([src_data_loader.dataset,src_data_loader.dataset])
-        src_data_loader = torch.utils.data.DataLoader(comb_dataset, batch_size=config['mann_net']['batch_size_src'], shuffle=True,drop_last=True,num_workers=config['num_workers'])
+    # if (len(src_data_loader.dataset)/ len(tgt_train_loader.dataset)< 0.7):
+    #     comb_dataset = torch.utils.data.ConcatDataset([src_data_loader.dataset,src_data_loader.dataset])
+    #     src_data_loader = torch.utils.data.DataLoader(comb_dataset, batch_size=config['mann_net']['batch_size_src'], shuffle=True,drop_last=True,num_workers=config['num_workers'])
 
     # Target test Data loaders
     
@@ -227,7 +259,7 @@ def train_mann_multi(args):
     ###########################
     num_cls=2
     net = DgMannNet(config,num_cls,use_init_weights=True,feat_dim=2048,discrim_feat=config['mann_net']['discrim_feat'])
-    
+    net.to(device)
     # print network and arguments
     # print(net)
     print('Training Mann {} model for {}->{}'.format('DgMannNet',config['mann_net']['src_dataset'], config['mann_net']['tgt_dataset']))
@@ -273,11 +305,17 @@ def train_mann_multi(args):
     # tnsorboard_writer=SummaryWriter(log_dir=)
     # hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,-1)
     # print("Start: HTER {}  acc {}".format(hter,acc))
+    tnsrboard_path=os.path.join(config['mannnet_exp_path'],'tensorboardfiles')
+    writer = SummaryWriter(tnsrboard_path)
+
+    #initial Evaluation
+    hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,-1,writer)
+    print("Epoch {} HTER {}  acc {}".format(-1,hter,acc))
 
     for epoch in range(num_epoch):
-        err = train_epoch(config,src_data_loader, tgt_train_loader, net, opt_net, opt_dis, opt_selector, opt_classifier,epoch,config['device']) 
+        err = train_epoch(config,src_data_loader, tgt_train_loader, net, opt_net, opt_dis, opt_selector, opt_classifier,epoch,writer,config['device']) 
 
-        hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,epoch)
+        hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,epoch,writer)
         print("Epoch {} HTER {}  acc {}".format(epoch,hter,acc))
 
         if err == -1:
@@ -286,11 +324,11 @@ def train_mann_multi(args):
         ##############
         # Save Model #
         ##############
-        outfile = join(checkpoint_path, 'mann_net_{:s}_{:s}_epoch{:02d}.pt'.format(config['mann_net']['src_dataset'], config['mann_net']['tgt_dataset'],epoch))
+        outfile = join(checkpoint_path, 'mann_net_{:s}_{:s}_epoch{:02d}.pt'.format(config['mann_net']['src_dataset'], config['mann_net']['tgt_dataset'],epoch+1))
         print('Saving to', outfile)
         net.save(outfile)
     
-    
+    writer.close()
     
     print("end")
 
@@ -299,7 +337,8 @@ if __name__ == "__main__":
     parser.add_argument('--net_type', type=str, default='lstmmot')
     parser.add_argument('--debug', type=bool, default=False)
     parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
-    parser.add_argument('--src_checkpoint_file', type=str, default='checkpoints/net_00039439.pt')
+    # parser.add_argument('--src_checkpoint_file', type=str, default='checkpoints/net_00039439.pt')
+    parser.add_argument('--src_checkpoint_file', type=str, default='ocda_fas_files/src_net/src_net_exp_000/checkpoints/src_net_MsCaOu_epoch01.pt')
     parser.add_argument('--mannnet_outpath', type=str, default='ocda_fas_files/mann_net')
     parser.add_argument('--centroids_path', type=str, default='ocda_fas_files')
 

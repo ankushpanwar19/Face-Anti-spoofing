@@ -9,7 +9,7 @@ eval_at_first_iter: True
 set_seed: False
 exp_name_prefix: lstmmot_exp_001                                      
 
-num_workers: 12
+num_workers: 8
 
 # --- Train options ---
 mute_cnn: False # if True, then CNN part is not trained
@@ -253,24 +253,42 @@ transforms:
   # horizontal flip
   horiflip: False
 
-
-# ---- target set Mann net ------
-mann_net:
+# ******** OCDA Configs #########
+src_net:
   src_dataset: MsCaOu
-  tgt_dataset: Ce
-
-  batch_size_tgt: 16
-  batch_size_tgt_test: 32
+  tgt_dataset: MsCaOu
   batch_size_src: 16
   batch_size_src_test: 32
-  discrim_feat: True # for deciding input to discriminator
   lr: 0.0001
-  centroid_fname: 'centroids.npy'
   epochs: 10
   beta1: 0.9
   beta2: 0.999
   weight_decay: 0.00001
   feat_dim: 2048
+  lr_scheduler:
+      decay_iter: 1
+      gamma: 0.9
+
+# ---- target set Mann net ------
+mann_net:
+  src_dataset: MsCaOu
+  tgt_dataset: Ce
+  pretrained: 'src_net' # options: 'src_net' or 'dg'
+  batch_size_tgt: 16
+  batch_size_tgt_test: 32
+  batch_size_src: 16
+  batch_size_src_test: 32
+  discrim_feat: True # for deciding input to discriminator
+  lr: 0.00001
+  centroid_fname: 'centroids_src.npy'
+  epochs: 5
+  beta1: 0.9
+  beta2: 0.999
+  weight_decay: 0.00001
+  feat_dim: 2048
+  lr_scheduler:
+      decay_iter: 1
+      gamma: 0.9
 
 domain_factor_net:
   src_dataset: MsCaOu
@@ -313,8 +331,8 @@ scheduled_mann_net:
 da_baseline:
   src_dataset: MsCaOu
   tgt_dataset: Ce
-  batch_size_tgt: 32
-  batch_size_src: 32
+  batch_size_tgt: 16
+  batch_size_src: 16
   batch_size_tgt_test: 32
   batch_size_src_test: 32
   src:

@@ -85,14 +85,18 @@ def read_proto_file_txt(mode, protocol, img_path, sel_every, sel_these_many, dis
 
 
 def get_part_labels(mode, protocol, proto_path, img_path, sel_every, sel_these_many,
-                    disc_frms, split, net_type, small_trainset = False, datasetID = None, num_cls = 2):
+                    disc_frms, split, net_type, small_trainset = False, datasetID = None, num_cls = 2,data_filter='all'):
     fname = ''
     if mode == 'train':
         fname = join(proto_path, 'train_label_t.txt')
     elif mode=='val':
-        fname = join(proto_path, 'train_label_v.txt')
+        if data_filter=='all':
+            fname = join(proto_path, 'train_label_v.txt')
+        elif data_filter=='live':
+            fname = join(proto_path, 'train_live.txt')
     elif mode == 'test':
         fname = join(proto_path, 'test_label.txt')
+        
     # print('>>>>> get_examples_labels_casia.py --> get_part_labels() --> proto-fname: {} '.format(fname))
     # print('Reading protocol file := [{}]'.format(fname))
     part = {}
@@ -112,6 +116,8 @@ def get_part_labels(mode, protocol, proto_path, img_path, sel_every, sel_these_m
 
 
 def get_examples_labels(datset_path, mode, protocol, split, sel_every, sel_thesemany, img_path, net_type, small_trainset = False, datasetID = None, num_cls = 2):
+
+    data_filter='all'
     if mode == 'train' or mode == 'val':
         disc_frms = 193
         sel_these_many = 52
@@ -119,6 +125,11 @@ def get_examples_labels(datset_path, mode, protocol, split, sel_every, sel_these
     elif mode == 'test':
         disc_frms = 0
         sel_these_many = sel_thesemany
+    elif mode == 'vallive':
+        disc_frms = 193
+        sel_these_many = 52
+        mode='val'
+        data_filter='live'
     else:
         pass
     proto_path = ''
@@ -128,7 +139,7 @@ def get_examples_labels(datset_path, mode, protocol, split, sel_every, sel_these
         proto_path = join(datset_path, 'metas', 'protocol{}'.format(protocol))
     part, labels, gtFlags, scores, num_exmps = get_part_labels\
         (mode, protocol, proto_path, img_path, sel_every, sel_these_many, disc_frms,
-         split, net_type, small_trainset = small_trainset, datasetID = datasetID, num_cls = num_cls)
+         split, net_type, small_trainset = small_trainset, datasetID = datasetID, num_cls = num_cls,data_filter=data_filter)
     return part, labels, gtFlags, scores, num_exmps
 
 

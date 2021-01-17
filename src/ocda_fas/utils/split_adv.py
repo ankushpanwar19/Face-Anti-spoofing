@@ -66,11 +66,38 @@ def split_celeb():
 
     print("end")
 
+def sample_from_celeb(name,split=0.2):
+    base_path="/scratch_net/moustachos/apanwar/CelebA-Spoof/CelebA_Spoof/metas/intra_test/myprotocol"
+    file_train = os.path.join(base_path,'train_label_t.txt')
+
+    live_path=[]
+    with open(file_train) as f:
+        for line in f:
+            p=line.split(" ")[0]
+            if "live" in p:
+               live_path.append(p) 
+
+
+    _,live_path_test = train_test_split(live_path, test_size=split, random_state=42)
+
+    #train dict and text
+    #Val dict and text
+    live_sample=np.char.add(live_path_test," ")
+    live_sample=np.char.add(live_sample,"1")
+    live_sample=live_sample.tolist()
+
+    write_path= os.path.join(base_path,name)
+    with open(write_path, 'w') as outfile:
+        outfile.writelines(["%s\n" % item  for item in live_sample])
+
+    print("end")
+
 def visualize_celeb():
 
     print("Celeb")
 
 if __name__ == "__main__":
-    pass
+    # split_celeb()
+    sample_from_celeb("train_live.txt")
 
 

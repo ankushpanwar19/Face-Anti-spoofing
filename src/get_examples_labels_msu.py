@@ -137,13 +137,13 @@ def get_examples_labels(datset_path, mode, protocol, split, sel_every, sel_these
     
     disc_frms = None
     #I commented it for more images
-    # if mode == 'train':
-    #     disc_frms = 182
-    #     print('*** [mode:{}] [sel_these_many:{}] [disc_frames:{}] ***'.format(mode, sel_these_many, disc_frms))
-    
     if mode == 'train':
-        disc_frms = 0
+        disc_frms = 182
         print('*** [mode:{}] [sel_these_many:{}] [disc_frames:{}] ***'.format(mode, sel_these_many, disc_frms))
+    
+    # if mode == 'train':
+    #     disc_frms = 0
+    #     print('*** [mode:{}] [sel_these_many:{}] [disc_frames:{}] ***'.format(mode, sel_these_many, disc_frms))
     elif mode == 'val':
         disc_frms = 0
         print('*** [mode:{}] [sel_every:{}] [disc_frames:{}] ***'.format(mode, sel_every, disc_frms))

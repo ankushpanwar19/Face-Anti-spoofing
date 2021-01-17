@@ -80,6 +80,7 @@ celebA:
   include_cropped_faces_train: True
   include_cropped_faces_val: True
   include_cropped_faces_test: True
+  include_cropped_faces_train_live: True
   dataset_path_machine0: '/scratch_net/moustachos/apanwar/CelebA-Spoof/CelebA_Spoof/'
   full_img_path_machine0: '/scratch_net/moustachos/apanwar/CelebA-Spoof/CelebA_Spoof/Data/train'
   full_img_path_test_machine0: '/scratch_net/moustachos/apanwar/CelebA-Spoof/CelebA_Spoof/Data/test'

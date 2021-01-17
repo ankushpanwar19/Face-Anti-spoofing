@@ -6,7 +6,7 @@ import torch
 import sys
 sys.path.append("src")
 from ocda_fas.utils.data_utils import get_domain_list,domain_combined_data_loaders
-from ocda_fas.source.models.dg_resnet import DgEncoder
+from ocda_fas.source.models.dg_resnet2 import DgEncoder
 
 
 def class_count (data):
@@ -28,10 +28,14 @@ def compute_source_centroids(config,configdl):
     source_domain_list,target_domain_list= get_domain_list(config,'mann_net')
 
     #  source and target Data loaders
-    src_data_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='train',net='mann_net',type='src')
+    src_data_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='test',net='mann_net',type='src')
 
     net = DgEncoder(config)
-    net.load_init_weights(config['checkpoint_file_path'])
+    if config['mann_net']['pretrained']=='dg':
+        net.load_init_weights(config['checkpoint_file_path'])
+    elif config['mann_net']['pretrained']=='src_net':
+        net.load(config['checkpoint_file_path'],'encoder','classifier')
+
     net.to(device)
     net.eval()
 
@@ -41,30 +45,27 @@ def compute_source_centroids(config,configdl):
     count=np.zeros((num_cls, 1))
 
     total=int(len(src_data_loader.dataset)/src_data_loader.batch_size)
-    with tqdm(total=total) as pbar:
-        for idx, (data,_,target) in enumerate(src_data_loader):
+    with torch.no_grad():
+        with tqdm(total=total) as pbar:
+            for idx, (data,_,target) in enumerate(src_data_loader):
 
-            # setup data and target #
-            data=data.to(device)
-            target = target.to(device)
-            data.require_grad = False
-            target.require_grad = False
+                # setup data and target #
+                data=data.to(device)
+                target = target.to(device)
+                data.require_grad = False
+                target.require_grad = False
 
-            # forward pass
-            x,_,_ = net(data.clone())
+                # forward pass
+                x,_,_ = net(data.clone())
 
-            # add feed-forward feature to centroid tensor
-            for i in range(len(target)):
-                label = target[i]
-                centroids[label.item()] += x[i].detach().cpu().numpy()
-                count[label.item(),0]+=1.0
-            pbar.update(1)
-        # break
-    # Average summed features with class count
+                # add feed-forward feature to centroid tensor
+                for i in range(len(target)):
+                    label = target[i]
+                    centroids[label.item()] += x[i].detach().cpu().numpy()
+                    count[label.item(),0]+=1.0
+                pbar.update(1)
+            # break
+        # Average summed features with class count
     centroids /= count
 
     np.save(os.path.join(config['centroids_path'],config['mann_net']['centroid_fname']), centroids)
-
-
-
-def evaluation()

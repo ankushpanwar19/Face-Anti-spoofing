@@ -114,13 +114,13 @@ def get_part_labels(mode, protocol, proto_path, img_path, sel_every, sel_these_m
 def get_examples_labels(datset_path, mode, protocol, split, sel_every, sel_thesemany, img_path, net_type, small_trainset = False, datasetID = None, num_cls = 2):
 
     #I commented it for more images
-    # if mode == 'train' or mode == 'val':
-    #     disc_frms = 193
-    #     sel_these_many = 52
-
     if mode == 'train' or mode == 'val':
-        disc_frms = 0
-        sel_these_many = sel_thesemany
+        disc_frms = 193
+        sel_these_many = 52
+
+    # if mode == 'train' or mode == 'val':
+    #     disc_frms = 0
+    #     sel_these_many = sel_thesemany
 
     elif mode == 'test':
         disc_frms = 0

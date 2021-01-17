@@ -11,11 +11,11 @@ import sys
 sys.path.append("src")
 print(os.getcwd())
 from utils import get_config, make_dir
-from source.models.dg_mann_net import DgMannNet
+from ocda_fas.source.models.dg_mann_net import DgMannNet
 from data_loader_anet import get_dataset
-from data_utils import get_domain_list,domain_combined_data_loaders
+from ocda_fas.utils.data_utils import get_domain_list,domain_combined_data_loaders
 
-def eval2(config,val_test_loader,tgt_test_loader,net,epoch):
+def eval2(config,val_test_loader,tgt_test_loader,net,epoch,writer):
     
     device=config['device']
     net.to(device)
@@ -24,14 +24,14 @@ def eval2(config,val_test_loader,tgt_test_loader,net,epoch):
     total=len(val_test_loader)
     path=config['mannnet_score_files']
     
-    val_file=os.path.join(path,"val_score_epoch{}.txt".format(epoch))
-    
+    val_file=os.path.join(path,"val_score_epoch{}.txt".format(epoch+1))
+    evaluation_set="Evaluation_"+config['mann_net']['tgt_dataset']
     # threshold=0.2974
     print("******* writing the val Dataset result******")
     f=open(val_file, 'w')
     with torch.no_grad():
         with tqdm(total=total) as pbar:
-            for batch_idx, (data_t, path,labels) in enumerate(val_test_loader):
+            for batch_idx, (data_t, p,labels) in enumerate(val_test_loader):
 
                 data_t = data_t.to(device)
                 data_t.require_grad = False
@@ -74,9 +74,14 @@ def eval2(config,val_test_loader,tgt_test_loader,net,epoch):
     hter=(fpr[idx]+fnr[idx])/2
     print("Val :: HTER :{} Threshold:{} idx:{} FAR:{} FRR:{}".format(hter, thrs,idx,fpr[idx],fnr[idx]))
     
+    writer.add_scalar(evaluation_set+'/Val_HTER', hter, epoch+1)
+    writer.add_scalar(evaluation_set+'/Val_eer_thr', thrs, epoch+1)
+    writer.add_scalar(evaluation_set+'/Val_FPR', fpr[idx], epoch+1)
+    writer.add_scalar(evaluation_set+'/Val_FNR', fnr[idx], epoch+1)
+
     if 'f_summary_file' in config.keys():
         fsum=open(config["f_summary_file"],'a')
-        fsum.write("\nEpoch:{}\n".format(epoch))
+        fsum.write("\nEpoch:{}\n".format(epoch+1))
         fsum.write("Val_HTER:{} Val_thrs:{} Val_FAR:{} Val_FRR:{} idx:{}\n".format(hter, thrs,fpr[idx],fnr[idx],idx))
         fsum.close()
         
@@ -85,45 +90,44 @@ def eval2(config,val_test_loader,tgt_test_loader,net,epoch):
     predict_lst=[]
     label_lst=[]
 
-    test_file=os.path.join(path,"test_score_epoch{}.txt".format(epoch))
+    test_file=os.path.join(path,"test_score_epoch{}.txt".format(epoch+1))
     print("******* writing the test Dataset result******")
     f=open(test_file, 'w')
     with torch.no_grad():
-        with tqdm(total=total) as pbar:
-            for batch_idx, (data_t, t,labels) in enumerate(tgt_test_loader):
+        for batch_idx, (data_t, t,labels) in enumerate(tqdm(tgt_test_loader)):
 
-                data_t = data_t.to(device)
-                data_t.require_grad = False
+            data_t = data_t.to(device)
+            data_t.require_grad = False
 
-                x_t,score_t,_ = net.tgt_net(data_t.clone())
+            x_t,score_t,_ = net.tgt_net(data_t.clone())
 
-                direct_feature = x_t.clone()
+            direct_feature = x_t.clone()
 
-                # set up visual memory
-                keys_memory = net.centroids.detach().clone()
-                keys_memory=keys_memory.to(device)
-                # computing memory feature by querying and associating visual memory
-                values_memory = score_t.clone()
-                values_memory = values_memory.softmax(dim=1).to(device)
-                memory_feature = torch.matmul(values_memory, keys_memory)
+            # set up visual memory
+            keys_memory = net.centroids.detach().clone()
+            keys_memory=keys_memory.to(device)
+            # computing memory feature by querying and associating visual memory
+            values_memory = score_t.clone()
+            values_memory = values_memory.softmax(dim=1).to(device)
+            memory_feature = torch.matmul(values_memory, keys_memory)
 
-                # computing concept selector
-                concept_selector = net.fc_selector(x_t.clone()).tanh()
-                class_enhancer = concept_selector * memory_feature
-                x_t = direct_feature + class_enhancer
+            # computing concept selector
+            concept_selector = net.fc_selector(x_t.clone()).tanh()
+            class_enhancer = concept_selector * memory_feature
+            x_t = direct_feature + class_enhancer
 
-                score_t = net.tgt_net.classifier(x_t.clone())
-                pred_sc=torch.softmax(score_t,dim=1)
-                pred = pred_sc[:,0]<thrs
-                pred=pred.double()
+            score_t = net.tgt_net.classifier(x_t.clone())
+            pred_sc=torch.softmax(score_t,dim=1)
+            pred = pred_sc[:,0]<thrs
+            pred=pred.double()
 
-                for i,_ in enumerate(pred):
-                    predict_lst.append(pred[i].item())
-                    label_lst.append(labels[i].item())
-                    f.write("{:.5f},{:},{:d},{:s}\n".format(pred_sc[i,0].item(),int(pred[i].item()),labels[i].item(),t[i]))
-                
-                if config['ocda_debug']:
-                    break
+            for i,_ in enumerate(pred):
+                predict_lst.append(pred[i].item())
+                label_lst.append(labels[i].item())
+                f.write("{:.5f},{:},{:d},{:s}\n".format(pred_sc[i,0].item(),int(pred[i].item()),labels[i].item(),t[i]))
+            
+            if config['ocda_debug']:
+                break
 
     tp, fp, tn, fn=perf_measure(label_lst,predict_lst)
     fpr=fp/(tn+fp) # False rejection rate
@@ -132,7 +136,11 @@ def eval2(config,val_test_loader,tgt_test_loader,net,epoch):
     hter= (fpr+fnr)/2
     acc=(tp+tn)/(tp+fp+tn+fn)
     print("Test :: HTER :{} FAR:{} FRR:{}".format(hter,fpr,fnr))
-    f.write("HTER:{},FAR:{},FRR:{},thr:{}".format(hter,fpr,fnr,thrs))
+
+    writer.add_scalar(evaluation_set+'/Test_HTER', hter, epoch+1)
+    writer.add_scalar(evaluation_set+'/Test_FPR', fpr, epoch+1)
+    writer.add_scalar(evaluation_set+'/Test_FNR', fnr, epoch+1)
+    # f.write("HTER:{},FAR:{},FRR:{},thr:{}".format(hter,fpr,fnr,thrs))
     f.close()
 
     if 'f_summary_file' in config.keys():

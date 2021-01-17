@@ -12,7 +12,7 @@ import sys
 import time
 sys.path.append("src")
 from networks import GradRevLayer,ResNetClsNet
-from ocda_fas.eval import perf_measure
+from ocda_fas.source.algorithms.eval import perf_measure
 from ocda_fas.source.models.dg_resnet2 import DgEncoder
 from schedulers import PolynomialLR
 # from data_utils import MyDataParallel
@@ -400,7 +400,7 @@ class DABaselineTgt_GRL():
         gamma= self.config['da_baseline']['tgt']['lr_scheduler']['gamma']
         numepochs=config['da_baseline']['tgt']['epochs']
         self.scheduler_net= PolynomialLR(self.optim_net,numepochs,decay_iter,gamma)
-        self.scheduler_discrim=PolynomialLR(self.optim_net,numepochs,decay_iter,gamma)
+        self.scheduler_discrim=PolynomialLR(self.optim_discrim,numepochs,decay_iter,gamma)
 
         self.criterion=torch.nn.CrossEntropyLoss()
         self.tensor_writer=writer
@@ -454,7 +454,7 @@ class DABaselineTgt_GRL():
                 
                 X_t= self.tgt_net.module.encoder(data_t.clone())
             else:
-                X_t= self.tgt_net.module.encoder(data_t.clone())
+                X_t= self.tgt_net.encoder(data_t.clone())
 
             X_comb = torch.cat((X_s, X_t), 0)
 
@@ -597,6 +597,248 @@ class DABaselineTgt_GRL():
                 self.tensor_writer.add_scalar('Eval_tgt/test_Hter', hter, epoch+1)
 
         return loss_avg,acc,hter,eer_thr
+
+    def save(self,path):
+
+        if torch.cuda.device_count() > 1:
+            torch.save({
+                    'encoder': self.tgt_net.module.encoder.state_dict(),
+                    'classifier': self.tgt_net.module.classifier.state_dict(),
+                    'dicriminator':self.discriminator.state_dict()},path)
+        else:
+            torch.save({
+                    'encoder': self.tgt_net.encoder.state_dict(),
+                    'classifier': self.tgt_net.classifier.state_dict(),
+                    'dicriminator':self.discriminator.state_dict()},path)
+
+    def load(self,checkpoint):
+        self.tgt_net.load(checkpoint,'encoder','classifier')
+        print("\n***Target Net Intialized with src checkpoint****\n")
+
+
+class SrcTgtDist():
+
+    def __init__(self,config,configdl,writer):
+
+        self.config=config
+        self.configdl=configdl
+        self.device=self.config['device']
+        #******* Network Initialization *************
+
+        self.tgt_net = DgEncoder(self.config)
+        config_resnet_clsnet = config['resent_clsnet']
+        self.discriminator = ResNetClsNet(config_resnet_clsnet, config['debug'],'ResNetClsNet')
+
+        if torch.cuda.device_count() > 1:
+            print("Let's use", torch.cuda.device_count(), "GPUs!")
+            # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+            self.tgt_net = nn.DataParallel(self.tgt_net)
+            self.discriminator = nn.DataParallel(self.discriminator)
+        
+        self.tgt_net.to(self.device)
+        self.discriminator.to(self.device)
+
+
+        self.da_lambda=self.config['da_baseline']['tgt']['da_lambda']
+        self.da_lambda_type=self.config['da_baseline']['tgt']['da_lambda_type']
+        self.dom_loss_wt=self.config['da_baseline']['tgt']['dom_loss_wt']
+        #******* optmizer Initialization *************
+        lr_encoder= self.config['da_baseline']['tgt']['lr_encoder']
+        lr_discrim= self.config['da_baseline']['tgt']['lr_discrim']
+        weight_decay= self.config['da_baseline']['tgt']['weight_decay']
+        beta1= self.config['da_baseline']['tgt']['beta1']
+        beta2= self.config['da_baseline']['tgt']['beta2']
+        betas=(beta1,beta2)
+
+        self.optim_net = optim.Adam(self.tgt_net.parameters(), lr=lr_encoder, weight_decay=weight_decay, betas=betas)
+        self.optim_discrim = optim.Adam(self.discriminator.parameters(), lr=lr_discrim, weight_decay=weight_decay, betas=betas)
+
+        decay_iter= self.config['da_baseline']['tgt']['lr_scheduler']['decay_iter']
+        gamma= self.config['da_baseline']['tgt']['lr_scheduler']['gamma']
+        numepochs=config['da_baseline']['tgt']['epochs']
+        self.scheduler_net= PolynomialLR(self.optim_net,numepochs,decay_iter,gamma)
+        self.scheduler_discrim=PolynomialLR(self.optim_net,numepochs,decay_iter,gamma)
+
+        self.criterion=torch.nn.CrossEntropyLoss()
+        self.tensor_writer=writer
+
+
+    def train_epoch(self,src_train_loader,tgt_train_loader,epoch,num_epoch):
+        
+        dataset_len= min(len(src_train_loader.dataset), len(tgt_train_loader.dataset))
+        dataloader_len = min(len(src_train_loader), len(tgt_train_loader)) 
+        joint_loader = zip(src_train_loader, tgt_train_loader)
+
+        batch_size=src_train_loader.batch_size
+        print("train_epoch enter")
+        self.tgt_net.train()
+        
+        print_each=200
+        if self.config['debug']:
+            print_each=1
+        running_loss_cls=0.0
+        running_loss_discrim=0.0
+        predict_src_lst=[]
+        label_src_lst=[]
+        predict_domain=[]
+        label_domain=[]
+
+        print("Learning Rate:",self.optim_net.param_groups[0]['lr'])
+        for batch_idx, ((data_s, _,label_s), (data_t,_, _)) in enumerate(joint_loader):
+            ########################
+            # Setup data variables #
+            ########################
+            # net_start = time.time()
+            self.optim_net.zero_grad()
+            self.optim_discrim.zero_grad()
+            # print("print",self.device)
+            data_s = data_s.to(self.device)
+            data_t = data_t.to(self.device)
+            label_s = label_s.to(self.device)
+            data_s.require_grad = False
+            data_t.require_grad = False
+            label_s.require_grad = False
+
+            #*****clasfication branch****
+            X_s,logits_s,_= self.tgt_net(data_s.clone())
+ 
+            loss_cls= self.criterion(logits_s,label_s.clone())
+
+            running_loss_cls+=loss_cls.item()
+
+            #******Domian Discrimator branch******
+            if torch.cuda.device_count() > 1:
+                
+                X_t= self.tgt_net.module.encoder(data_t.clone())
+            else:
+                X_t= self.tgt_net.encoder(data_t.clone())
+
+            if sum(label_s==0).item()>0:
+                X_s_live=X_s[label_s==0]
+                X_comb = torch.cat((X_s, X_t), 0)
+            else:
+                X_comb = X_t
+
+            # print("Feature shape",X_comb.shape)
+            # Setting GRL lambda
+            if self.da_lambda_type=='vary':
+                p = float(batch_idx + epoch * dataloader_len) / (num_epoch * dataloader_len)
+                self.da_lambda=2. / (1. + np.exp(-10 * p)) - 1
+
+            grl_out = GradRevLayer.apply(X_comb, self.da_lambda)
+            domain_logits=self.discriminator(grl_out)
+
+            # print("out shape",domain_logits.shape)
+            # Domain labels Source =0 target =1
+            target_dom_t = torch.ones(len(data_t), requires_grad=False).long()
+            if sum(label_s==0).item()>0:
+                target_dom_s = torch.zeros(len(data_s), requires_grad=False).long()
+                label_concat = torch.cat((target_dom_s, target_dom_t), 0).to(self.device)
+            else:
+                label_concat=target_dom_t.to(self.device)
+
+            loss_discrim= self.criterion(domain_logits,label_concat)
+            running_loss_discrim+=loss_discrim.item()
+
+
+            loss_overall=loss_cls+ self.dom_loss_wt*loss_discrim
+            loss_overall.backward()
+            
+            # update weights
+            self.optim_net.step()
+            self.optim_discrim.step()
+
+
+            pred_src= torch.argmax(logits_s,dim=1)
+            pred_dom= torch.argmax(domain_logits,dim=1)
+            for i,_ in enumerate(logits_s):
+                    predict_src_lst.append(pred_src[i].item())
+                    label_src_lst.append(label_s[i].item())
+                    predict_domain.append(pred_dom[i].item())
+                    label_domain.append(label_concat[i].item())
+
+            
+            if (batch_idx+1)%print_each==0: #or ((batch_idx+1)==dataloader_len):
+                acc_src_train=metrics.accuracy_score(predict_src_lst,label_src_lst)
+                acc_dom=metrics.accuracy_score(predict_domain,label_domain)
+                loss_cls_avg=running_loss_cls/print_each
+                loss_discrim_avg=running_loss_discrim/print_each
+                print("\nTrain: Epoch:{:d}/{:d} Data:{:d}/{:d} Cls_Src_Acc:{:.4f} ClsLoss:{:4f} Dom_Acc:{:.4f} DiscrimLoss:{:4f}".format(epoch,num_epoch,(batch_idx+1)*batch_size,dataset_len,acc_src_train,loss_cls_avg,acc_dom,loss_discrim_avg),flush=True)
+                self.tensor_writer.add_scalar('Training/Cls_src_loss', loss_cls_avg, (epoch*dataloader_len)+batch_idx)
+                self.tensor_writer.add_scalar('Training/Discrim_loss', loss_discrim_avg, (epoch*dataloader_len)+batch_idx)
+                self.tensor_writer.add_scalar('Training/Acc_cls_src', acc_src_train, (epoch*dataloader_len)+batch_idx)
+                self.tensor_writer.add_scalar('Training/Acc_dom', acc_dom, (epoch*dataloader_len)+batch_idx)
+                
+                #reinitialize
+                predict_src_lst=[]
+                label_src_lst=[]
+                running_loss_cls=0.0
+                running_loss_discrim=0.0
+
+            if self.config['debug']:
+                break
+
+        return 0
+
+    def val(self,dataldr,domain,epoch,type="val"):
+
+        self.tgt_net.eval()
+        print_each=1000
+        predict_lst=[]
+        label_lst=[]
+        live_prob_lst=[]
+        total_loss=0.0
+        batch_size=dataldr.batch_size
+        dataset_len=len(dataldr.dataset)
+        print("val_epoch enter")
+        mean_vec=torch.zeros(2048)
+        count_live=0.0
+        with torch.no_grad():
+            for batch_idx, (data,path, label) in enumerate(tqdm(dataldr)):
+                # print("BATCH print",batch_idx)
+
+                data = data.to(self.device)
+                label = label.to(self.device)
+                data.require_grad = False
+                label.require_grad = False
+
+                x,logits,pred_prob= self.tgt_net(data.clone())
+                pred=torch.argmax(logits,dim=1)
+
+                for i,_ in enumerate(pred_prob):
+                    # live_prob_lst.append(pred_prob[i,0].item())
+                    label_lst.append(label[i].item())
+                    predict_lst.append(pred[i].item())
+
+                if domain=='src':
+                    if sum(label==0).item()>0:
+                        x=x[label==0]
+                        label=label[label==0]
+                    else:
+                        continue
+                    
+                batch_sum=torch.sum(x,dim=0)
+                mean_vec += batch_sum.cpu()
+                count_live += label.shape[0]
+
+                if self.config['debug']:
+                    break
+
+             
+        acc=metrics.accuracy_score(predict_lst,label_lst)
+        metric=domain+"_"+"accuracy"
+        self.tensor_writer.add_scalar('Eval_src/'+metric, acc, epoch+1)
+        mean_vec=mean_vec/count_live 
+
+        return mean_vec
+
+    def vec_dist(self,m1,m2,epoch,norm_type=2.0):
+        m1=m1.unsqueeze(0)/m1.norm()
+        m2=m2.unsqueeze(0)/m2.norm()
+        dist=torch.cdist(m1,m2,p=norm_type)
+
+        self.tensor_writer.add_scalar('Eval/Distance', dist.item(), epoch+1)
+        return dist.item()
 
     def save(self,path):
 

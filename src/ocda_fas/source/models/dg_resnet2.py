@@ -71,10 +71,17 @@ class DgEncoder(nn.Module):
         soft_clsnet_out=softmax(resnet_clsnet_out)
         return resnet_out,resnet_clsnet_out,soft_clsnet_out
 
-    def load(self, checkpoint_file,key_encoder,key_cls):
+    def load(self,checkpoint_file,key_encoder,key_cls):
         state_dict = torch.load(checkpoint_file, map_location=self.device)
         self.encoder.load_state_dict(state_dict[key_encoder])
         self.classifier.load_state_dict(state_dict[key_cls])
+
+    def save(self, out_path):
+
+        torch.save({
+                'encoder': self.encoder.state_dict(),
+                'classifier': self.classifier.state_dict(),
+                }, out_path)
         
 
 if __name__ == "__main__":

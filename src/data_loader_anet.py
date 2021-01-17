@@ -115,7 +115,7 @@ class FaceAntiSpoof(Dataset):
             img_path = configdl[dataset]['full_img_path_test_machine{}'.format(machine)]
         elif mode == 'test' and datasetID == 'ce':
             img_path = configdl[dataset]['full_img_path_test_machine{}'.format(machine)]
-        elif mode == 'val' and datasetID == 'ce':
+        elif (mode == 'val') and datasetID == 'ce':
             img_path = configdl[dataset]['full_img_path_machine{}'.format(machine)]
         else:
             print('>>>>>>>>>>>>  Error: from data_loader_anet.py --> get_dataset_paths() <<<<<<<<<<<<<<<<<<<<')
@@ -140,6 +140,9 @@ class FaceAntiSpoof(Dataset):
         facialBBoxesPath = None
         if (datasetID == 'ra' or datasetID == 'ca' or datasetID == 'ms' or datasetID == 'ce') and mode == 'train':
             facialBBoxesPath = configdl[dataset]['facial_bboxes_path_machine{}'.format(machine)]
+        
+        elif (datasetID == 'ce') and mode == 'val':
+            facialBBoxesPath = configdl[dataset]['facial_bboxes_path_machine{}'.format(machine)]
         elif datasetID == 'ra' and mode == 'val':
             facialBBoxesPath = configdl[dataset]['facial_bboxes_path_dev_machine{}'.format(machine)]
         elif (datasetID == 'ca' or datasetID == 'ms') and mode == 'val':
@@ -163,7 +166,7 @@ class FaceAntiSpoof(Dataset):
 
         return img_path, facial_text_file, dataset
 
-    def getCords(self, facial_text_file):
+    def getCords(self, facial_text_file,im):
         file = open(facial_text_file, 'r')
         str = file.readlines()
         x1 = None
@@ -173,10 +176,10 @@ class FaceAntiSpoof(Dataset):
         if "CelebA" in facial_text_file:
             if len(str)>0:
                 str = str[0].strip().split()
-                x1 = float(str[0].strip())
-                y1 = float(str[1].strip())
-                w = float(str[2].strip())
-                h = float(str[3].strip())
+                x1 = float(str[0].strip())*(im.size[0]/224)
+                y1 = float(str[1].strip())*(im.size[1]/224)
+                w = float(str[2].strip())*(im.size[0]/224)
+                h = float(str[3].strip())*(im.size[1]/224)
                 x2=x1+w
                 y2=y1+h
             else:
@@ -200,7 +203,7 @@ class FaceAntiSpoof(Dataset):
         return x1, y1, x2, y2
 
     def getCroppedFace(self, facial_text_file, im):
-        x1, y1, x2, y2 = self.getCords(facial_text_file)
+        x1, y1, x2, y2 = self.getCords(facial_text_file,im)
         if (x1 > -1) and (y1 > -1) and (x2 > -1) and (y2 > -1):
             im = im.crop((x1, y1, x2, y2))
         return im

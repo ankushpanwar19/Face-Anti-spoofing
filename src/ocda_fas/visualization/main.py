@@ -18,7 +18,9 @@ N_BINS_CHANNEL = 50
 
 # Fetch the number of images using glob
 #my_root = "C:/Users/Pratyush/SWITCHdrive/tsne/static"
-my_root =  "C:/Users/Pratyush/SWITCHdrive/samples"
+
+# my_root =  "C:/Users/Pratyush/SWITCHdrive/samples"
+my_root=  '/scratch/apanwar/CelebA-Spoof/CelebA_Spoof/Data/test'
 my_exts = ['*.jpg', 'jpeg', '*.png']
 files = [glob.glob(my_root + '/**/'+ x, recursive=True) for x in my_exts]  
 flattened = [val for sublist in files for val in sublist]
