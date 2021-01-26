@@ -84,12 +84,12 @@ class DgEncoder(nn.Module):
                 }, out_path)
         
 
-if __name__ == "__main__":
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    config_fname='src/configs/train.yaml'
-    config= get_config(config_fname)
-    config['device']=device
-    checkpoint_file='output/fas_project/DG_exp/lstmmot_exp_013/checkpoints/net_00039439.pt'
-    m=DgEncoder(config)
-    m.load_init_weights(checkpoint_file)
-    print("end")
+# if __name__ == "__main__":
+#     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#     config_fname='src/configs/train.yaml'
+#     config= get_config(config_fname)
+#     config['device']=device
+#     checkpoint_file='output/fas_project/DG_exp/lstmmot_exp_013/checkpoints/net_00039439.pt'
+#     m=DgEncoder(config)
+#     m.load_init_weights(checkpoint_file)
+#     print("end")

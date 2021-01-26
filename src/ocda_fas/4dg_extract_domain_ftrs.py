@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from argparse import ArgumentParser
+from tqdm import tqdm
 import torch
 
 import sys
@@ -8,7 +9,7 @@ sys.path.append("src")
 print(os.getcwd())
 from utils import get_config, make_dir
 
-from data_utils import get_domain_list,domain_combined_data_loaders
+from ocda_fas.utils.data_utils import get_domain_list,domain_combined_data_loaders
 from source.models.dg_domain_factor_net import DgDomainFactorNet
 
 import pdb
@@ -22,9 +23,10 @@ def extract_domain_factor_features(args):
     config_fname='src/configs/train.yaml'
     config= get_config(config_fname)
     config['device']=device
+    config['ocda_debug']=args.debug
     config['net_type']=args.net_type
-    config['out_path']=os.path.join(args.experiment_path,args.out_path)
-    config['domain_checkpoint']=os.path.join(args.experiment_path,args.domain_checkpoint_file)
+    config['out_path']=os.path.join(args.experiment_path,args.domainfactor_exp_path)
+    config['domain_checkpoint']=os.path.join(args.experiment_path,args.domainfactor_exp_path,args.checkpoint_file)
 
     configdl_fname= 'src/configs/data_loader_dg.yaml'
     configdl= get_config(configdl_fname)
@@ -35,55 +37,79 @@ def extract_domain_factor_features(args):
 
     tgt_train_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='train',net='domain_factor_net',type='tgt',shuffle=False,drop_last=False)
 
-    net = DgDomainFactorNet(config,2,False)
+    net = DgDomainFactorNet(config,num_cls=2,use_init_weight=False)
     net.to(device)
 
     # load weights
     net.load(config['domain_checkpoint'])
     net.eval()
 
-    src_ftrs = extract_dataset(src_data_loader, net,device)
-    src_ftrs.tofile(os.path.join(config['out_path'], 'src_domain_factor_ftr.bin')) # N x 2048
-    tgt_ftrs = extract_dataset(tgt_train_loader, net,device)
-    tgt_ftrs.tofile(os.path.join(config['out_path'], 'tgt_domain_factor_ftr.bin'))
+    src_centroid = domain_centroid(config,src_data_loader, net,device)
+    sort_idx = scheduler_idx(config,tgt_train_loader,net,device,src_centroid)
+    np.save(os.path.join(config['out_path'], 'sortidx_for_schedule'),sort_idx)
 
 
-def extract_dataset(loader,net,device):
+def domain_centroid(config,loader,net,device):
     ''' mean Domain feature factor of source data
     '''
 
-    domain_ftrs=[]
+    domain_dtr_sum=torch.zeros(2048)
     net.eval()
-    for batch_idx, (data, _,_) in enumerate(loader):
+    with torch.no_grad():
+        for batch_idx, (data, _,_) in enumerate(tqdm(loader)):
 
-        info_str = "[Extract] [{}/{} ({:.2f}%)]".format(
-            batch_idx * len(data), len(loader.dataset), 100 * float(batch_idx) / len(loader))
+            data=data.to(device)
 
-        data=data.to(device)
+            data.require_grad = False
 
-        data.require_grad = False
+            
+            domain_factor_ftr= net.domain_factor_net.encoder(data.clone()) # Bx512
 
-        with torch.no_grad():
-            domain_factor_ftr,_,_ = net.domain_factor_net(data.clone()) # Bx512
+            norm_vec=torch.linalg.norm(domain_factor_ftr,dim=1).unsqueeze(dim=1)
+            domain_factor_ftr_normlaized=domain_factor_ftr/norm_vec
 
-        domain_ftrs.append(domain_factor_ftr.detach().cpu().numpy())
+            domain_dtr_sum+=torch.sum(domain_factor_ftr_normlaized,dim=0).cpu()
 
-        if batch_idx % 100 == 0:
-            print(info_str)
-        if batch_idx>2:
-            break
+            if config['ocda_debug']:
+                break
+    src_centroid=domain_dtr_sum/len(loader.dataset)
+    return src_centroid
 
-    domain_ftrs_arr = np.concatenate(domain_ftrs, axis=0)
-    # assert len(loader.dataset) == src_domain_ftrs.shape[0], "{} vs {}".format(len(loader.dataset), src_domain_ftrs.shape[0])
-    # np.save(config['filepath'],domain_ftrs_arr)
-    return domain_ftrs_arr
+def scheduler_idx(config,loader,net,device,centroid):
+    ''' Returns: idx sorted based on distance from source centroid
+    '''
+
+    dist_list=[]
+    net.eval()
+    with torch.no_grad():
+        for batch_idx, (data, _,_) in enumerate(tqdm(loader)):
+
+            data=data.to(device)
+
+            data.require_grad = False
+
+            
+            domain_factor_ftr= net.domain_factor_net.encoder(data.clone()) # Bx512
+            norm_vec=torch.linalg.norm(domain_factor_ftr,dim=1).unsqueeze(dim=1)
+            domain_factor_ftr_normlaized=domain_factor_ftr/norm_vec
+
+            dist=1.0-torch.mm(domain_factor_ftr_normlaized.cpu(),centroid.unsqueeze(dim=1).cpu())
+            dist_list+=dist.squeeze(dim=1).tolist()
+
+            if config['ocda_debug'] and batch_idx>1:
+                break
+    dist_list=np.array(dist_list)
+    sort_idx=np.argsort(dist_list)
+    return sort_idx
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--net_type', type=str, default='lstmmot')
+    parser.add_argument('--debug', type=bool, default=False)
     parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
-    parser.add_argument('--domain_checkpoint_file', type=str, default='ocda_fas_files/DomainFactorNet_MsCaOu_Ce.pt')
-    parser.add_argument('--out_path', type=str, default='ocda_fas_files')
+    parser.add_argument('--domainfactor_exp_path', type=str, default='ocda_fas_files/domainfactor/domainfactor_net_exp_000/')
+    parser.add_argument('--checkpoint_file', type=str, default='checkpoints/DomainFactorNet_MsCaOu_Ce_5.pt')
+    # parser.add_argument('--out_path', type=str, default='ocda_fas_files')
 
     args = parser.parse_args()
     extract_domain_factor_features(args)

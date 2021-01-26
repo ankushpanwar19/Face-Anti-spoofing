@@ -11,7 +11,7 @@ class DgMannNet(nn.Module):
 
     """Defines a Dynamic Meta-Embedding Network."""
 
-    def __init__(self,config, num_cls=2, use_init_weights=True,feat_dim=2048,discrim_feat=False):
+    def __init__(self,config, num_cls=2, use_init_weights=True,feat_dim=2048,discrim_feat=False,use_domain_factor_selector=False):
 
         super(DgMannNet, self).__init__()
         self.config=config
@@ -24,7 +24,7 @@ class DgMannNet(nn.Module):
 
         self.src_net = DgEncoder(config)
         self.tgt_net = DgEncoder(config)
-
+        self.use_domain_factor_selector=use_domain_factor_selector
         self.centroids = torch.from_numpy(np.load(config['centroids_file'])).float()
         assert self.centroids is not None
         self.centroids.requires_grad = False
@@ -48,6 +48,9 @@ class DgMannNet(nn.Module):
             )
 
         self.fc_selector = nn.Linear(self.feat_dim, self.feat_dim)
+
+        if self.use_domain_factor_selector:
+            self.domain_factor_selector = nn.Linear(self.feat_dim, self.feat_dim)
 
 
 
@@ -80,19 +83,35 @@ class DgMannNet(nn.Module):
 
     def save(self, out_path):
 
-        torch.save({
+        if self.use_domain_factor_selector:
+            torch.save({
                 'tgt_encoder': self.tgt_net.encoder.state_dict(),
                 'tgt_clf': self.tgt_net.classifier.state_dict(),
                 'src_encoder': self.src_net.encoder.state_dict(),
                 'src_clf': self.src_net.classifier.state_dict(),
-                'discriminator': self.discriminator.state_dict()
+                'discriminator': self.discriminator.state_dict(),
+                'fc_selector':self.fc_selector.state_dict(),
+                'domain_factor_selector':self.domain_factor_selector.state_dict(),
                 }, out_path)
+        else:
+            torch.save({
+                'tgt_encoder': self.tgt_net.encoder.state_dict(),
+                'tgt_clf': self.tgt_net.classifier.state_dict(),
+                'src_encoder': self.src_net.encoder.state_dict(),
+                'src_clf': self.src_net.classifier.state_dict(),
+                'discriminator': self.discriminator.state_dict(),
+                'fc_selector':self.fc_selector.state_dict(),
+                }, out_path)
+        
 
     def load(self,checkpoint_file):
         self.src_net.load(checkpoint_file,'src_encoder','src_clf')
         self.tgt_net.load(checkpoint_file,'tgt_encoder','tgt_clf')
         state_dict = torch.load(checkpoint_file, map_location=self.device)
         self.discriminator.load_state_dict(state_dict['discriminator'])
+
+        if False:
+            self.fc_selector.load_state_dict(state_dict['fc_selector'])
         print('MannNet is initialized with previously trained MannNet.')
 
     def save_tgt_net(self, out_path):

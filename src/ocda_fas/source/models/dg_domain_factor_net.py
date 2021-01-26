@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 # from utils import register_model, get_model
 # from . import cos_norm_classifier
-from .dg_resnet import DgEncoder
+from .dg_resnet2 import DgEncoder
 
 
 class DgDomainFactorNet(nn.Module):
@@ -45,30 +45,30 @@ class DgDomainFactorNet(nn.Module):
         Load weights from pretrained tgt model
         and initialize DomainFactorNet from pretrained tgr model.
         """
-        self.tgt_net.load(checkpoint_file,'tgt_gen')
-        self.domain_factor_net.load(checkpoint_file,'tgt_gen')
+        self.tgt_net.load(checkpoint_file,'tgt_encoder','tgt_clf')
+        self.domain_factor_net.load(checkpoint_file,'tgt_encoder','tgt_clf')
         print("**** Weights have been initialized with mann net *****")
 
     def save(self, out_path):
         torch.save({
-                'domain_gen': self.domain_factor_net.gen.state_dict(),
-                'decoder': self.decoder.state_dict()
+                'domain_encoder': self.domain_factor_net.encoder.state_dict(),
+                'classifier': self.domain_factor_net.classifier.state_dict(),
+                'decoder': self.decoder.state_dict(),
+                'tgt_encoder': self.tgt_net.encoder.state_dict(),
+                'tgt_clf': self.tgt_net.classifier.state_dict(),
                 }, out_path)
 
-    def save_domain_factor_net(self, out_path):
-        torch.save({self.domain_factor_net.state_dict()}, out_path)
 
-    def load(self,domain_chkpoint_file,tgt_chkpoint_file=None):
+    def load(self,checkpoint_file):
 
         """
-        Load weights from pretrained tgt model
-        and initialize DomainFactorNet from pretrained tgr model.
+        load trained Target net
         """
-        if (tgt_chkpoint_file is not None):
-            self.tgt_net.load(tgt_chkpoint_file,'tgt_gen')
-        self.domain_factor_net.load(domain_chkpoint_file,'domain_gen')
+        self.tgt_net.load(checkpoint_file,'tgt_encoder','tgt_clf')
+        self.domain_factor_net.load(checkpoint_file,'domain_encoder','classifier')
 
-        self.decoder.load(domain_chkpoint_file,self.device)
+        state_dict = torch.load(checkpoint_file, map_location=self.device)
+        self.decoder.load_state_dict(state_dict['decoder'])
         print("**** Weights have been initialized with previously Domain Factor net *****")
 
 
