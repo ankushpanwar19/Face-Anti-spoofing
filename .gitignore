@@ -150,7 +150,8 @@ sbatch_log/*
 sbatch_train_prat.sh
 sbatch_prat.sh
 **/vis_tensorboard/
-data_loader_dg.yaml
+**/data_loader_dg.yaml
+**/sbatch_train.sh
 ## Ignore checkpoint file
 *.ckpt
 
