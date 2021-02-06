@@ -9,7 +9,7 @@ eval_at_first_iter: True
 set_seed: False
 exp_name_prefix: lstmmot_exp_001                                      
 
-num_workers: 8
+num_workers: 24
 
 # --- Train options ---
 mute_cnn: False # if True, then CNN part is not trained
@@ -267,7 +267,7 @@ src_net:
   feat_dim: 2048
   lr_scheduler:
       decay_iter: 1
-      gamma: 0.9
+      gamma: 0.8
 
 # ---- target set Mann net ------
 mann_net:
@@ -286,6 +286,7 @@ mann_net:
   beta2: 0.999
   weight_decay: 0.00001
   feat_dim: 2048
+  discrim_thres: 0.5
   lr_scheduler:
       decay_iter: 1
       gamma: 0.9
@@ -298,7 +299,7 @@ domain_factor_net:
   batch_size_src: 16
   batch_size_src_test: 32
   batch_size_tgt_test: 32
-  lr: 0.0001
+  lr: 0.00001
   loss: sgd
   centroid_fname: 'centroids_src.npy'
   epochs: 10
@@ -322,7 +323,7 @@ scheduled_mann_net:
   batch_size_src: 16
   batch_size_src_test: 32
   discrim_feat: False
-  lr: 0.00001
+  lr: 0.0001
   centroid_fname: 'centroids_src.npy'
   epochs: 10
   beta1: 0.5

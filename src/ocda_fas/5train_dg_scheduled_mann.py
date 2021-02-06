@@ -377,7 +377,7 @@ def train_scheduled_mann_multi(args):
         # Calculate current domain ratio
         ratio = float(scheduled_ratio(epoch))
 
-        # actual_lr = ratio * lr
+        actual_lr = ratio * lr
 
         # for param_group in opt_net.param_groups:
         #     param_group['lr'] = actual_lr

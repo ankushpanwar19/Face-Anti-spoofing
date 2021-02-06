@@ -22,7 +22,7 @@ from schedulers import PolynomialLR
 import pdb
 
 
-def train_epoch(config,loader_src, loader_tgt, net, opt_net, opt_dis, opt_selector,opt_classifier, epoch,writer,device, the=0.6):
+def train_epoch(config,loader_src, loader_tgt, net, opt_net, opt_dis, opt_selector,opt_classifier, epoch,writer,device, the=0.5):
    
     print_interval = 10 # specifies how often to display
     tnsorboard_logging_interval = 1000  
@@ -320,11 +320,11 @@ def train_mann_multi(args):
     writer = SummaryWriter(tnsrboard_path)
 
     #initial Evaluation
-    hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,-1,writer)
-    print("Epoch {} HTER {}  acc {}".format(-1,hter,acc))
+    # hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,-1,writer)
+    # print("Epoch {} HTER {}  acc {}".format(-1,hter,acc))
 
     for epoch in range(num_epoch):
-        err = train_epoch(config,src_data_loader, tgt_train_loader, net, opt_net, opt_dis, opt_selector, opt_classifier,epoch,writer,config['device']) 
+        err = train_epoch(config,src_data_loader, tgt_train_loader, net, opt_net, opt_dis, opt_selector, opt_classifier,epoch,writer,config['device'],config['mann_net']['discrim_thres']) 
 
         hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,epoch,writer)
         print("Epoch {} HTER {}  acc {}".format(epoch,hter,acc))
@@ -354,9 +354,9 @@ if __name__ == "__main__":
     parser.add_argument('--debug', type=bool, default=False)
     parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
     # parser.add_argument('--src_checkpoint_file', type=str, default='checkpoints/net_00039439.pt')
-    parser.add_argument('--src_checkpoint_file', type=str, default='ocda_fas_files/src_net/src_net_exp_000/checkpoints/src_net_MsCaOu_epoch01.pt')
+    parser.add_argument('--src_checkpoint_file', type=str, default='ocda_fas_files/src_net/src_net_exp_001/checkpoints/src_net_MsCaOu_epoch05.pt')
     parser.add_argument('--mannnet_outpath', type=str, default='ocda_fas_files/mann_net')
-    parser.add_argument('--centroids_path', type=str, default='ocda_fas_files')
+    parser.add_argument('--centroids_path', type=str, default='ocda_fas_files/src_net/src_net_exp_001')
 
     args = parser.parse_args()
     train_mann_multi(args)

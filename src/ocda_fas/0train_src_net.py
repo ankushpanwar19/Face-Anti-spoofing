@@ -19,6 +19,7 @@ from data_loader_anet import get_dataset
 from torch.utils.tensorboard import SummaryWriter
 from source.algorithms.eval import perf_measure
 from source.models.dg_resnet2 import DgEncoder
+from schedulers import PolynomialLR
 
 import pdb
 
@@ -200,12 +201,17 @@ def train_src_net(args):
     betas=(beta1,beta2)
 
     if config['ocda_debug']:
-        num_epoch=1
+        num_epoch=2
     else:
         num_epoch= config['src_net']['epochs']
 
     optimizer = optim.Adam(net.parameters(), lr=lr, 
                          weight_decay=weight_decay, betas=betas)
+
+    decay_iter= config['src_net']['lr_scheduler']['decay_iter']
+    gamma= config['src_net']['lr_scheduler']['gamma']
+    scheduler_net= PolynomialLR(optimizer,num_epoch,decay_iter,gamma)
+
     criterion=torch.nn.CrossEntropyLoss()
     ##############
     # Train mann #
@@ -227,10 +233,12 @@ def train_src_net(args):
     eval_epoch(config,net,val_data_loader,test_data_loader,writer,-1)
 
     for epoch in range(num_epoch):
+        print("Learning Rate:",optimizer.param_groups[0]['lr'])
         train_epoch(config,net,train_data_loader,optimizer,criterion,writer,epoch) 
 
         eval_epoch(config,net,val_data_loader,test_data_loader,writer,epoch)
 
+        scheduler_net.step()
         ##############
         # Save Model #
         ##############

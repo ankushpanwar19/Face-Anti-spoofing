@@ -6,6 +6,9 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+from PIL import Image
+from torchvision import transforms
+from torchvision.utils import save_image
 
 sys.path.append("src")
 from utils import get_config, make_dir
@@ -21,8 +24,8 @@ config['device']=device
 config['net_type']='lstmmot'
 
 source_domain_list,target_domain_list= get_domain_list(config,'da_baseline')
-src_train_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='val',net='da_baseline',type='src')
-tgt_train_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='val',net='da_baseline',type='src')
+src_train_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='val',net='da_baseline',type='src',shuffle=True)
+tgt_train_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='val',net='da_baseline',type='tgt',shuffle=True)
 
 joint_loader = zip(src_train_loader, tgt_train_loader)
 # image_dataset=torch.tensor()
@@ -58,8 +61,12 @@ for batchidx, ((src_images,src_p,src_labels),(tgt_images,tgt_p,tgt_labels)) in e
         writer.add_embedding(features,
                         metadata=label_tsv,
                         label_img=images_tsv,
-                        global_step=1)
+                        global_step=3)
         break
+    src_images[0].show()
+    # for i in range(src_images.shape[0]):
+    #     im=transforms.ToPILImage(mode='RGB')(src_images[i])
+    #     im.save("image.png")
     # if batchidx==5:
     #     break
 

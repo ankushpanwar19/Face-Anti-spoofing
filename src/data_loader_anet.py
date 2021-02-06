@@ -169,6 +169,7 @@ class FaceAntiSpoof(Dataset):
     def getCords(self, facial_text_file,im):
         file = open(facial_text_file, 'r')
         str = file.readlines()
+        # print(facial_text_file,str)
         x1 = None
         y1 = None
         x2 = None
@@ -199,7 +200,14 @@ class FaceAntiSpoof(Dataset):
             y1 = -1
             x2 = -1
             y2 = -1
+        
+        if "casia" in facial_text_file and 1.5*(x1-x2)<(y2-y1):
+            # print("prev Cordinates",x1,y1,x2,y2)
+            y2=y1+ 1.2*(x2-x1)
+            # print("Now Cordinates",x1,y1,x2,y2)
+
         file.close()
+        # print(facial_text_file,str)
         return x1, y1, x2, y2
 
     def getCroppedFace(self, facial_text_file, im):
