@@ -107,8 +107,8 @@ if __name__ == "__main__":
     parser.add_argument('--net_type', type=str, default='lstmmot')
     parser.add_argument('--debug', type=bool, default=False)
     parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
-    parser.add_argument('--domainfactor_exp_path', type=str, default='ocda_fas_files/domainfactor/domainfactor_net_exp_001/')
-    parser.add_argument('--checkpoint_file', type=str, default='checkpoints/DomainFactorNet_MsCaOu_Ce_10.pt')
+    parser.add_argument('--domainfactor_exp_path', type=str, default='ocda_fas_files/domainfactor/domainfactor_net_exp_002/')
+    parser.add_argument('--checkpoint_file', type=str, default='checkpoints/DomainFactorNet_MsCaOu_Ce_7.pt')
     # parser.add_argument('--out_path', type=str, default='ocda_fas_files')
 
     args = parser.parse_args()

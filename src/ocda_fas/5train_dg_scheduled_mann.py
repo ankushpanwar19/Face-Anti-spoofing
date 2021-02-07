@@ -379,18 +379,18 @@ def train_scheduled_mann_multi(args):
 
         actual_lr = ratio * lr
 
-        # for param_group in opt_net.param_groups:
-        #     param_group['lr'] = actual_lr
-        # for param_group in opt_dis.param_groups:
-        #     param_group['lr'] = actual_lr
-        # for param_group in opt_selector.param_groups:
-        #     param_group['lr'] = actual_lr * 0.1
-        # for param_group in opt_classifier.param_groups:
-        #     param_group['lr'] = actual_lr * 0.1
+        for param_group in opt_net.param_groups:
+            param_group['lr'] = actual_lr
+        for param_group in opt_dis.param_groups:
+            param_group['lr'] = actual_lr
+        for param_group in opt_selector.param_groups:
+            param_group['lr'] = actual_lr * 0.1
+        for param_group in opt_classifier.param_groups:
+            param_group['lr'] = actual_lr * 0.1
 
-        # if config['scheduled_mann_net']['domain_factor_cond'] != 0:
-        #     for param_group in opt_net.param_groups:
-        #         param_group['lr'] = actual_lr * 0.1
+        if config['scheduled_mann_net']['domain_factor_cond'] != 0:
+            for param_group in opt_selector_domain_factor.param_groups:
+                param_group['lr'] = actual_lr * 0.1
 
         if ratio < 1:
             # Use sampler for data loading
@@ -424,10 +424,10 @@ if __name__ == "__main__":
     parser.add_argument('--debug', type=bool, default=False)
     parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
     parser.add_argument('--schmannnet_outpath', type=str, default='ocda_fas_files/scheduled_mann_net')
-    parser.add_argument('--mann_checkpoint_file', type=str, default='ocda_fas_files/mann_net/mann_net_exp_009/checkpoints/mann_net_MsCaOu_Ce_epoch03.pt')
-    parser.add_argument('--domain_checkpoint_file', type=str, default='ocda_fas_files/domainfactor/domainfactor_net_exp_001/checkpoints/DomainFactorNet_MsCaOu_Ce_10.pt')
-    parser.add_argument('--sortidx_for_schedule', type=str, default='ocda_fas_files/domainfactor/domainfactor_net_exp_001/sortidx_for_schedule.npy')
-    parser.add_argument('--centroids_path', type=str, default='ocda_fas_files')
+    parser.add_argument('--mann_checkpoint_file', type=str, default='ocda_fas_files/mann_net/mann_net_exp_020/checkpoints/mann_net_MsCaOu_Ce_epoch02.pt')
+    parser.add_argument('--domain_checkpoint_file', type=str, default='ocda_fas_files/domainfactor/domainfactor_net_exp_002/checkpoints/DomainFactorNet_MsCaOu_Ce_7.pt')
+    parser.add_argument('--sortidx_for_schedule', type=str, default='ocda_fas_files/domainfactor/domainfactor_net_exp_002/sortidx_for_schedule.npy')
+    parser.add_argument('--centroids_path', type=str, default='ocda_fas_files/src_net/src_net_exp_001')
     parser.add_argument('--norm_domain_factor', type=bool, default=True)
     args = parser.parse_args()
 

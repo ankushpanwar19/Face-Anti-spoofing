@@ -109,7 +109,7 @@ class DgMannNet(nn.Module):
         self.tgt_net.load(checkpoint_file,'tgt_encoder','tgt_clf')
         state_dict = torch.load(checkpoint_file, map_location=self.device)
         self.discriminator.load_state_dict(state_dict['discriminator'])
-        # self.fc_selector.load_state_dict(state_dict['fc_selector'])
+        self.fc_selector.load_state_dict(state_dict['fc_selector'])
 
         print('MannNet is initialized with previously trained MannNet.')
 
