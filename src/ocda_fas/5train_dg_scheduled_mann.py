@@ -402,7 +402,7 @@ def train_scheduled_mann_multi(args):
             print('Epoch: {}, using default'.format(epoch))
             train_tgt_loader = torch.utils.data.DataLoader(tgt_train_dataset, batch_size=batch_tgt, shuffle=True,drop_last=True,num_workers=config['num_workers'])
 
-        err = train_epoch(config,src_data_loader, train_tgt_loader, net, domain_factor_net, opt_net, opt_dis, opt_selector,opt_classifier,opt_selector_domain_factor,epoch,writer,device)
+        err = train_epoch(config,src_data_loader, train_tgt_loader, net, domain_factor_net, opt_net, opt_dis, opt_selector,opt_classifier,opt_selector_domain_factor,epoch,writer,device,config['scheduled_mann_net']['discrim_thres'])
 
         hter,acc=eval_scheduled(config,tgt_val_loader,tgt_test_loader,net,domain_factor_net,epoch,writer)
         print("Epoch {} HTER {}  acc {}".format(epoch,hter,acc))

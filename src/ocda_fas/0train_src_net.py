@@ -166,6 +166,7 @@ def train_src_net(args):
     config['ocda_debug']=args.debug
     config['net_type']=args.net_type
     config['srcnet_outpath']=os.path.join(args.experiment_path,args.srcnet_outpath)
+    os.makedirs(config['srcnet_outpath'],exist_ok=True)
     config['srcnet_exp_path']=make_exp_dir(config['srcnet_outpath'],"src_net")
     configdl_fname= 'src/configs/data_loader_dg.yaml'
     configdl= get_config(configdl_fname)
@@ -254,7 +255,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--net_type', type=str, default='lstmmot')
     parser.add_argument('--debug', type=bool, default=False)
-    parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
+    parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_029')
     parser.add_argument('--srcnet_outpath', type=str, default='ocda_fas_files/src_net')
 
     args = parser.parse_args()

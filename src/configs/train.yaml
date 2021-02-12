@@ -255,8 +255,8 @@ transforms:
 
 # ******** OCDA Configs #########
 src_net:
-  src_dataset: MsCaOu
-  tgt_dataset: MsCaOu
+  src_dataset: MsCaRa
+  tgt_dataset: MsCaRa
   batch_size_src: 16
   batch_size_src_test: 32
   lr: 0.0001
@@ -323,7 +323,8 @@ scheduled_mann_net:
   batch_size_src: 16
   batch_size_src_test: 32
   discrim_feat: False
-  lr: 0.00001
+  discrim_thres: 0.5
+  lr: 0.000001
   centroid_fname: 'centroids_src.npy'
   epochs: 10
   beta1: 0.5
