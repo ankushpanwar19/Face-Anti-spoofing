@@ -46,7 +46,7 @@ if __name__ == "__main__":
     parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_029')
     # parser.add_argument('--checkpoint_file', type=str, default='checkpoints/net_00039439.pt')
     parser.add_argument('--checkpoint_file', type=str, default='ocda_fas_files/src_net/src_net_exp_000/checkpoints/src_net_MsCaRa_epoch06.pt')
-    parser.add_argument('--centroids_path', type=str, default='ocda_fas_files/src_net/src_net_exp_000/')
+    parser.add_argument('--centroids_path', type=str, default='ocda_fas_files/')
 
     args = parser.parse_args()
     main(args)

@@ -7,13 +7,13 @@ resume_checkpoint_path: ''
 resume_iteration: 0                                                    
 eval_at_first_iter: True
 set_seed: False
-exp_name_prefix: lstmmot_exp_001                                      
+exp_name_prefix: cnn_exp_001 #lstmmot_exp_001                                      
 
 num_workers: 16
 
 # --- Train options ---
 mute_cnn: False # if True, then CNN part is not trained
-mute_lstm: False
+mute_lstm: True
 option: 0
 # --- logger options ---
 snapshot_save_iter: 5000                                            
@@ -273,20 +273,21 @@ src_net:
 mann_net:
   src_dataset: MsCaOu
   tgt_dataset: Ce
-  pretrained: 'src_net' # options: 'src_net' or 'dg'
+  pretrained: 'dg' # options: 'src_net' or 'dg'
   batch_size_tgt: 16
   batch_size_tgt_test: 32
   batch_size_src: 16
   batch_size_src_test: 32
   discrim_feat: False # for deciding input to discriminator
-  lr: 0.00001
-  centroid_fname: 'centroids_src.npy'
+  lr: 0.000001
+  centroid_fname: 'centroids_dg.npy'
   epochs: 5
   beta1: 0.9
   beta2: 0.999
   weight_decay: 0.00001
   feat_dim: 2048
-  discrim_thres: 0.5
+  discrim_thres: 0.4
+  eval_mem: True
   lr_scheduler:
       decay_iter: 1
       gamma: 0.9
@@ -299,7 +300,7 @@ domain_factor_net:
   batch_size_src: 16
   batch_size_src_test: 32
   batch_size_tgt_test: 32
-  lr: 0.00001
+  lr: 0.0001
   loss: sgd
   centroid_fname: 'centroids_src.npy'
   epochs: 10
@@ -337,7 +338,7 @@ scheduled_mann_net:
   fake_label_type: 'random'
   schedule_strategy: 'shift' #'expand'
   schedule_power: 0.5
-  initial_ratio: 0.35
+  initial_ratio: 0.5
   
 da_baseline:
   src_dataset: MsCaOu

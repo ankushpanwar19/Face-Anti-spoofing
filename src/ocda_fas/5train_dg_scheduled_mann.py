@@ -247,6 +247,7 @@ def train_scheduled_mann_multi(args):
     config_fname='src/configs/train.yaml'
     config= get_config(config_fname)
     config['device']=device
+    config['comments']=args.comments
     config['ocda_debug']=args.debug
     config['net_type']=args.net_type
     config['mann_checkpoint_file']=os.path.join(args.experiment_path,args.mann_checkpoint_file)
@@ -349,6 +350,9 @@ def train_scheduled_mann_multi(args):
 
     f_summary_file=os.path.join(config['scheduledmannnet_exp_path'],"summary.txt")
     config["f_summary_file"]=f_summary_file
+    fsum=open(config["f_summary_file"],'a')
+    fsum.write(config['comments'])
+    fsum.close()
 
     config_write_loc=join(config['scheduledmannnet_exp_path'],'config.yaml')
     with open(config_write_loc, 'w') as outfile:
@@ -359,7 +363,8 @@ def train_scheduled_mann_multi(args):
 
 
 
-    scheduled_ratio = lambda ep: (1. - initial_ratio) / ((num_epoch - 5) ** power) * (ep ** power) + initial_ratio
+    # scheduled_ratio = lambda ep: (1. - initial_ratio) / ((num_epoch - 5) ** power) * (ep ** power) + initial_ratio
+    scheduled_ratio = lambda ep: (1. - initial_ratio) / ((num_epoch - 3) ** power) * (ep ** power) + initial_ratio
     # here 30 means ratio will be greater than 1 for last 30 sepchs
 
     # train_tgt_loader = load_data_multi(tgt_list, 'train', batch=batch,
@@ -377,20 +382,20 @@ def train_scheduled_mann_multi(args):
         # Calculate current domain ratio
         ratio = float(scheduled_ratio(epoch))
 
-        actual_lr = ratio * lr
+        # actual_lr = ratio * lr
 
-        for param_group in opt_net.param_groups:
-            param_group['lr'] = actual_lr
-        for param_group in opt_dis.param_groups:
-            param_group['lr'] = actual_lr
-        for param_group in opt_selector.param_groups:
-            param_group['lr'] = actual_lr * 0.1
-        for param_group in opt_classifier.param_groups:
-            param_group['lr'] = actual_lr * 0.1
+        # for param_group in opt_net.param_groups:
+        #     param_group['lr'] = actual_lr
+        # for param_group in opt_dis.param_groups:
+        #     param_group['lr'] = actual_lr
+        # for param_group in opt_selector.param_groups:
+        #     param_group['lr'] = actual_lr * 0.1
+        # for param_group in opt_classifier.param_groups:
+        #     param_group['lr'] = actual_lr * 0.1
 
-        if config['scheduled_mann_net']['domain_factor_cond'] != 0:
-            for param_group in opt_selector_domain_factor.param_groups:
-                param_group['lr'] = actual_lr * 0.1
+        # if config['scheduled_mann_net']['domain_factor_cond'] != 0:
+        #     for param_group in opt_selector_domain_factor.param_groups:
+        #         param_group['lr'] = actual_lr * 0.1
 
         if ratio < 1:
             # Use sampler for data loading
@@ -422,13 +427,22 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--net_type', type=str, default='lstmmot')
     parser.add_argument('--debug', type=bool, default=False)
-    parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
-    parser.add_argument('--schmannnet_outpath', type=str, default='ocda_fas_files/scheduled_mann_net')
-    parser.add_argument('--mann_checkpoint_file', type=str, default='ocda_fas_files/mann_net/mann_net_exp_020/checkpoints/mann_net_MsCaOu_Ce_epoch02.pt')
-    parser.add_argument('--domain_checkpoint_file', type=str, default='ocda_fas_files/domainfactor/domainfactor_net_exp_002/checkpoints/DomainFactorNet_MsCaOu_Ce_7.pt')
-    parser.add_argument('--sortidx_for_schedule', type=str, default='ocda_fas_files/domainfactor/domainfactor_net_exp_002/sortidx_for_schedule.npy')
-    parser.add_argument('--centroids_path', type=str, default='ocda_fas_files/src_net/src_net_exp_001')
+    # parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
+    # parser.add_argument('--schmannnet_outpath', type=str, default='ocda_fas_files/scheduled_mann_net')
+    # parser.add_argument('--mann_checkpoint_file', type=str, default='ocda_fas_files/mann_net/mann_net_exp_020/checkpoints/mann_net_MsCaOu_Ce_epoch02.pt')
+    # parser.add_argument('--domain_checkpoint_file', type=str, default='ocda_fas_files/domainfactor/domainfactor_net_exp_002/checkpoints/DomainFactorNet_MsCaOu_Ce_7.pt')
+    # parser.add_argument('--sortidx_for_schedule', type=str, default='ocda_fas_files/domainfactor/domainfactor_net_exp_002/sortidx_for_schedule.npy')
+    # parser.add_argument('--centroids_path', type=str, default='ocda_fas_files/src_net/src_net_exp_001')
+    # parser.add_argument('--norm_domain_factor', type=bool, default=True)
+    parser.add_argument('--experiment_path', type=str, default='output/fas_project/ocda_exp/')
+    parser.add_argument('--schmannnet_outpath', type=str, default='ocda_expand_improve/scheduled_mann_net')
+    parser.add_argument('--mann_checkpoint_file', type=str, default='ocda_expand_improve/mann_net/mann_net_exp_000/checkpoints/mann_net_MsCaOu_Ce_epoch02.pt')
+    parser.add_argument('--domain_checkpoint_file', type=str, default='ocda_expand_improve/domainfactor/domainfactor_net_exp_000/checkpoints/DomainFactorNet_MsCaOu_Ce_7.pt')
+    parser.add_argument('--sortidx_for_schedule', type=str, default='ocda_expand_improve/domainfactor/domainfactor_net_exp_000/sortidx_for_schedule.npy')
+    parser.add_argument('--centroids_path', type=str, default='ocda_expand_improve/src_net/src_net_exp_000')
     parser.add_argument('--norm_domain_factor', type=bool, default=True)
+
+    parser.add_argument('--comments', type=str, default='Scheduling initial ratio 0.5 and full training after 7 epoch. lr 10^-6 no decay (Shift still)')
     args = parser.parse_args()
 
     train_scheduled_mann_multi(args)

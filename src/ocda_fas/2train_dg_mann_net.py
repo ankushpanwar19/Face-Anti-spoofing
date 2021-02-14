@@ -16,7 +16,7 @@ from utils import get_config, make_dir
 from utils_dg import get_data_loader as get_dataloader_train,get_part_labels
 from source.models.dg_mann_net import DgMannNet
 from data_loader_anet import get_dataset
-from source.algorithms.eval import eval2
+from source.algorithms.eval import eval2,eval_dg
 from schedulers import PolynomialLR
 
 import pdb
@@ -229,10 +229,16 @@ def train_mann_multi(args):
     config['device']=device
     config['ocda_debug']=args.debug
     config['net_type']=args.net_type
+    config['eval']=args.eval
+    config['comments']=args.comments
     config['src_checkpoint_file']=os.path.join(args.experiment_path,args.src_checkpoint_file)
     config['mannnet_outpath']=os.path.join(args.experiment_path,args.mannnet_outpath)
     config['centroids_file']=os.path.join(args.experiment_path,args.centroids_path,config['mann_net']['centroid_fname'])
-    config['mannnet_exp_path']=make_exp_dir(config['mannnet_outpath'],"mann_net")
+
+    if config['eval']:
+        config['mannnet_exp_path']=make_exp_dir(config['mannnet_outpath'],"mann_net_eval")
+    else:
+        config['mannnet_exp_path']=make_exp_dir(config['mannnet_outpath'],"mann_net")
 
     configdl_fname= 'src/configs/data_loader_dg.yaml'
     configdl= get_config(configdl_fname)
@@ -311,6 +317,9 @@ def train_mann_multi(args):
 
     f_summary_file=os.path.join(config['mannnet_exp_path'],"summary.txt")
     config["f_summary_file"]=f_summary_file
+    fsum=open(config["f_summary_file"],'a')
+    fsum.write(config['comments'])
+    fsum.close()
 
     config_write_loc=join(config['mannnet_exp_path'],'config.yaml')
     with open(config_write_loc, 'w') as outfile:
@@ -319,32 +328,38 @@ def train_mann_multi(args):
     tnsrboard_path=os.path.join(config['mannnet_exp_path'],'tensorboardfiles')
     writer = SummaryWriter(tnsrboard_path)
 
-    #initial Evaluation
-    # hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,-1,writer)
-    # print("Epoch {} HTER {}  acc {}".format(-1,hter,acc))
+    if config['eval']:
+        hter,acc=eval_dg(config,tgt_val_loader,tgt_test_loader,net,-1,writer)
+        print("Epoch {} HTER {}  acc {}".format(-1,hter,acc))
 
-    for epoch in range(num_epoch):
-        err = train_epoch(config,src_data_loader, tgt_train_loader, net, opt_net, opt_dis, opt_selector, opt_classifier,epoch,writer,config['device'],config['mann_net']['discrim_thres']) 
-
-        hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,epoch,writer)
-        print("Epoch {} HTER {}  acc {}".format(epoch,hter,acc))
-
-        if err == -1:
-            print("No suitable discriminator")
-
-        scheduler_net.step()
-        scheduler_dis.step()
-        scheduler_classifier.step()
-        scheduler_sel.step()
-
-        ##############
-        # Save Model #
-        ##############
-        outfile = join(checkpoint_path, 'mann_net_{:s}_{:s}_epoch{:02d}.pt'.format(config['mann_net']['src_dataset'], config['mann_net']['tgt_dataset'],epoch+1))
-        print('Saving to', outfile)
-        net.save(outfile)
+    else:
+    # initial Evaluation 
+        hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,-1,writer)
+        print("Epoch {} HTER {}  acc {}".format(-1,hter,acc))
     
-    writer.close()
+
+        for epoch in range(num_epoch):
+            err = train_epoch(config,src_data_loader, tgt_train_loader, net, opt_net, opt_dis, opt_selector, opt_classifier,epoch,writer,config['device'],config['mann_net']['discrim_thres']) 
+
+            hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,epoch,writer)
+            print("Epoch {} HTER {}  acc {}".format(epoch,hter,acc))
+
+            if err == -1:
+                print("No suitable discriminator")
+
+            scheduler_net.step()
+            scheduler_dis.step()
+            scheduler_classifier.step()
+            scheduler_sel.step()
+
+            ##############
+            # Save Model #
+            ##############
+            outfile = join(checkpoint_path, 'mann_net_{:s}_{:s}_epoch{:02d}.pt'.format(config['mann_net']['src_dataset'], config['mann_net']['tgt_dataset'],epoch+1))
+            print('Saving to', outfile)
+            net.save(outfile)
+        
+        writer.close()
     
     print("end")
 
@@ -352,11 +367,15 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--net_type', type=str, default='lstmmot')
     parser.add_argument('--debug', type=bool, default=False)
-    parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
-    # parser.add_argument('--src_checkpoint_file', type=str, default='checkpoints/net_00039439.pt')
-    parser.add_argument('--src_checkpoint_file', type=str, default='ocda_fas_files/src_net/src_net_exp_001/checkpoints/src_net_MsCaOu_epoch05.pt')
-    parser.add_argument('--mannnet_outpath', type=str, default='ocda_fas_files/mann_net')
-    parser.add_argument('--centroids_path', type=str, default='ocda_fas_files/src_net/src_net_exp_001')
+    # parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
+    parser.add_argument('--experiment_path', type=str, default='output/fas_project/ocda_exp')
+    parser.add_argument('--src_checkpoint_file', type=str, default='ocda_dglstm/lstmmot_exp_013/checkpoints/net_00033493.pt')
+    # parser.add_argument('--src_checkpoint_file', type=str, default='ocda_fas_files/src_net/src_net_exp_001/checkpoints/src_net_MsCaOu_epoch05.pt')
+    parser.add_argument('--mannnet_outpath', type=str, default='ocda_dglstm/mann_net')
+    # parser.add_argument('--mannnet_outpath', type=str, default='ocda_fas_files/mann_net')
+    parser.add_argument('--centroids_path', type=str, default='ocda_dglstm/lstmmot_exp_013')
+    parser.add_argument('--eval', type=bool, default=False)
+    parser.add_argument('--comments', type=str, default='Train with pretrained lstm with 0.4 acc thres lr 10-6')
 
     args = parser.parse_args()
     train_mann_multi(args)

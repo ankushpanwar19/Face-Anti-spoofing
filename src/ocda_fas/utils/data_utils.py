@@ -67,7 +67,7 @@ def domain_combined_data_loaders(config,configdl,domain_list,mode='train',net='m
     
     comb_dataset=get_multi_domain_dataset(config,configdl,domain_list,mode,drop_last,data_filter)
     print("Workers:",config['num_workers'])
-    combined_data_loader=torch.utils.data.DataLoader(comb_dataset, batch_size=batch_size, shuffle=shuffle,drop_last=drop_last,num_workers=config['num_workers'],pin_memory=True)
+    combined_data_loader=torch.utils.data.DataLoader(comb_dataset, batch_size=batch_size, shuffle=shuffle,drop_last=drop_last,num_workers=batch_size,pin_memory=True)
     # print("next reach")
 
     return combined_data_loader 
