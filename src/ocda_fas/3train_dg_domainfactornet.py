@@ -410,10 +410,16 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--net_type', type=str, default='lstmmot')
     parser.add_argument('--debug', type=bool, default=False)
-    parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
-    parser.add_argument('--tgt_checkpoint_file', type=str, default='ocda_fas_files/mann_net/mann_net_exp_020/checkpoints/mann_net_MsCaOu_Ce_epoch02.pt')
-    parser.add_argument('--domainfactor_outpath', type=str, default='ocda_fas_files/domainfactor')
+
+    parser.add_argument('--experiment_path', type=str, default='output/fas_project/ocda_exp')
+    parser.add_argument('--tgt_checkpoint_file', type=str, default='ocda_dglstm/mann_net/mann_net_exp_002/checkpoints/mann_net_MsCaOu_Ce_epoch01.pt')
+    parser.add_argument('--domainfactor_outpath', type=str, default='ocda_dglstm/domainfactor')
     # parser.add_argument('--centroids_path', type=str, default='ocda_fas_files')
+
+    # parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
+    # parser.add_argument('--tgt_checkpoint_file', type=str, default='ocda_fas_files/mann_net/mann_net_exp_020/checkpoints/mann_net_MsCaOu_Ce_epoch02.pt')
+    # parser.add_argument('--domainfactor_outpath', type=str, default='ocda_fas_files/domainfactor')
+    # # parser.add_argument('--centroids_path', type=str, default='ocda_fas_files')
 
     args = parser.parse_args()
     train_domain_factor_multi(args)

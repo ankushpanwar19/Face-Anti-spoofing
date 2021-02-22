@@ -203,7 +203,7 @@ def baseline_tgt_train_GRL(args):
     #******* src class *************
     writer = SummaryWriter(config['da_baseline_tnsorboard'])
     tgt_baseline=DABaselineTgt_GRL(config,configdl,writer)
-    # tgt_baseline.load("output/fas_project/DG_exp/lstmmot_exp_013/da_baseline/tgt_baseline/tgt_net_exp_037/GRL_checkpoint_3.pt")
+    tgt_baseline.load("output/fas_project/ocda_exp/ocda_expand_improve/baseline_grl/tgt_net_exp_000/GRL_checkpoint_8.pt")
     if config['debug']:
         num_epoch=2
     else:
@@ -215,9 +215,13 @@ def baseline_tgt_train_GRL(args):
         yaml.dump(config, outfile, default_flow_style=False)
 
     # inital Evaluation
+    # print("***** Initial Evaluation Start ******")
+    # _,_,_,tgt_eer_thr=tgt_baseline.val(tgt_val_loader,domain='tgt',epoch=-1,type="val")
+    # tgt_baseline.val(tgt_test_loader,domain='tgt',epoch=-1,type="test",eer_thr=tgt_eer_thr)
+
     print("***** Initial Evaluation Start ******")
-    _,_,_,tgt_eer_thr=tgt_baseline.val(tgt_val_loader,domain='tgt',epoch=-1,type="val")
-    tgt_baseline.val(tgt_test_loader,domain='tgt',epoch=-1,type="test",eer_thr=tgt_eer_thr)
+    _,_,_,src_eer_thr=tgt_baseline.val(src_val_loader,domain='tgt',epoch=-1,type="val")
+    tgt_baseline.val(src_test_loader,domain='tgt',epoch=-1,type="test",eer_thr=src_eer_thr)
 
     print("***** Src Training Start ******")
     for epoch in range(num_epoch):

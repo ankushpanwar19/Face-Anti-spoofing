@@ -71,21 +71,22 @@ def train_epoch(config,loader_src, loader_tgt, net, opt_net, opt_dis, opt_select
         x_t,score_t,prob_t = net.tgt_net(data_t.clone())
 
         ###########################
+        if config['mann_net']['eval_mem']:
         # storing direct feature
-        direct_feature = x_t.clone()
+            direct_feature = x_t.clone()
 
-        # set up visual memory
-        keys_memory = net.centroids.detach().clone()
-        keys_memory=keys_memory.to(device)
-        # computing memory feature by querying and associating visual memory
-        values_memory = score_t.clone()
-        values_memory = values_memory.softmax(dim=1).to(device)
-        memory_feature = torch.matmul(values_memory, keys_memory)
+            # set up visual memory
+            keys_memory = net.centroids.detach().clone()
+            keys_memory=keys_memory.to(device)
+            # computing memory feature by querying and associating visual memory
+            values_memory = score_t.clone()
+            values_memory = values_memory.softmax(dim=1).to(device)
+            memory_feature = torch.matmul(values_memory, keys_memory)
 
-        # computing concept selector
-        concept_selector = net.fc_selector(x_t.clone()).tanh()
-        class_enhancer = concept_selector * memory_feature
-        x_t = direct_feature + class_enhancer
+            # computing concept selector
+            concept_selector = net.fc_selector(x_t.clone()).tanh()
+            class_enhancer = concept_selector * memory_feature
+            x_t = direct_feature + class_enhancer
 
         # apply cosine norm classifier
         score_t = net.tgt_net.classifier(x_t.clone())
@@ -144,21 +145,20 @@ def train_epoch(config,loader_src, loader_tgt, net, opt_net, opt_dis, opt_select
             ###########################
             # storing direct feature
             ###########################
-
-            direct_feature = x_t.clone()
-
+            if config['mann_net']['eval_mem']:
+                direct_feature = x_t.clone()
             # set up visual memory
-            keys_memory = net.centroids.detach().clone()
-            keys_memory=keys_memory.to(device)
-            # computing memory feature by querying and associating visual memory
-            values_memory = score_t.clone()
-            values_memory = values_memory.softmax(dim=1).to(device)
-            memory_feature = torch.matmul(values_memory, keys_memory)
+                keys_memory = net.centroids.detach().clone()
+                keys_memory=keys_memory.to(device)
+                # computing memory feature by querying and associating visual memory
+                values_memory = score_t.clone()
+                values_memory = values_memory.softmax(dim=1).to(device)
+                memory_feature = torch.matmul(values_memory, keys_memory)
 
-            # computing concept selector
-            concept_selector = net.fc_selector(x_t.clone()).tanh()
-            class_enhancer = concept_selector * memory_feature
-            x_t = direct_feature + class_enhancer
+                # computing concept selector
+                concept_selector = net.fc_selector(x_t.clone()).tanh()
+                class_enhancer = concept_selector * memory_feature
+                x_t = direct_feature + class_enhancer
 
             # apply cosine norm classifier
             score_t = net.tgt_net.classifier(x_t.clone())
@@ -256,6 +256,10 @@ def train_mann_multi(args):
 
     tgt_test_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='test',net='mann_net',type='tgt')
 
+    src_val_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='val',net='mann_net',type='src')
+
+    src_test_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='test',net='mann_net',type='src')
+
     # if (len(src_data_loader.dataset)/ len(tgt_train_loader.dataset)< 0.7):
     #     comb_dataset = torch.utils.data.ConcatDataset([src_data_loader.dataset,src_data_loader.dataset])
     #     src_data_loader = torch.utils.data.DataLoader(comb_dataset, batch_size=config['mann_net']['batch_size_src'], shuffle=True,drop_last=True,num_workers=config['num_workers'])
@@ -329,7 +333,7 @@ def train_mann_multi(args):
     writer = SummaryWriter(tnsrboard_path)
 
     if config['eval']:
-        hter,acc=eval_dg(config,tgt_val_loader,tgt_test_loader,net,-1,writer)
+        hter,acc=eval_dg(config,src_val_loader,src_test_loader,net,-1,writer)
         print("Epoch {} HTER {}  acc {}".format(-1,hter,acc))
 
     else:
@@ -369,13 +373,13 @@ if __name__ == "__main__":
     parser.add_argument('--debug', type=bool, default=False)
     # parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
     parser.add_argument('--experiment_path', type=str, default='output/fas_project/ocda_exp')
-    parser.add_argument('--src_checkpoint_file', type=str, default='ocda_dglstm/lstmmot_exp_013/checkpoints/net_00033493.pt')
+    parser.add_argument('--src_checkpoint_file', type=str, default='ocda_expand_improve/src_net/src_net_exp_000/checkpoints/src_net_MsCaOu_epoch05.pt')
     # parser.add_argument('--src_checkpoint_file', type=str, default='ocda_fas_files/src_net/src_net_exp_001/checkpoints/src_net_MsCaOu_epoch05.pt')
-    parser.add_argument('--mannnet_outpath', type=str, default='ocda_dglstm/mann_net')
+    parser.add_argument('--mannnet_outpath', type=str, default='ocda_expand_improve/mann_net')
     # parser.add_argument('--mannnet_outpath', type=str, default='ocda_fas_files/mann_net')
-    parser.add_argument('--centroids_path', type=str, default='ocda_dglstm/lstmmot_exp_013')
+    parser.add_argument('--centroids_path', type=str, default='ocda_expand_improve/src_net/src_net_exp_000')
     parser.add_argument('--eval', type=bool, default=False)
-    parser.add_argument('--comments', type=str, default='Train with pretrained lstm with 0.4 acc thres lr 10-6')
+    parser.add_argument('--comments', type=str, default='Train with 0.5 acc thres lr 10-5 without mem')
 
     args = parser.parse_args()
     train_mann_multi(args)

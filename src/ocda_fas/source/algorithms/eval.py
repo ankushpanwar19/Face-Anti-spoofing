@@ -71,22 +71,24 @@ def eval2(config,val_test_loader,tgt_test_loader,net,epoch,writer):
                     break
     f.close()
     fpr, tpr, thresholds = metrics.roc_curve(label_lst, predict_lst, pos_label=0)
+    auc=metrics.auc(fpr, tpr)
     fnr=1-tpr
     diff=np.absolute(fpr-fnr)
     idx=diff.argmin()
     thrs=thresholds[idx]
     hter=(fpr[idx]+fnr[idx])/2
-    print("Val :: HTER :{} Threshold:{} idx:{} FAR:{} FRR:{}".format(hter, thrs,idx,fpr[idx],fnr[idx]))
+    print("Val :: HTER :{} Threshold:{} idx:{} FAR:{} FRR:{} AUC:{}".format(hter, thrs,idx,fpr[idx],fnr[idx],auc))
     
     writer.add_scalar(evaluation_set+'/Val_HTER', hter, epoch+1)
     writer.add_scalar(evaluation_set+'/Val_eer_thr', thrs, epoch+1)
     writer.add_scalar(evaluation_set+'/Val_FPR', fpr[idx], epoch+1)
     writer.add_scalar(evaluation_set+'/Val_FNR', fnr[idx], epoch+1)
+    writer.add_scalar(evaluation_set+'/Val_AUC',auc, epoch+1)
 
     if 'f_summary_file' in config.keys():
         fsum=open(config["f_summary_file"],'a')
         fsum.write("\nEpoch:{}\n".format(epoch+1))
-        fsum.write("Val_HTER:{} Val_thrs:{} Val_FAR:{} Val_FRR:{} idx:{}\n".format(hter, thrs,fpr[idx],fnr[idx],idx))
+        fsum.write("Val_HTER:{} Val_thrs:{} Val_FAR:{} Val_FRR:{} idx:{}\n Val_AUC:{}".format(hter, thrs,fpr[idx],fnr[idx],idx,auc))
         fsum.close()
         
     ################### TEST Dataset ######################
@@ -134,7 +136,9 @@ def eval2(config,val_test_loader,tgt_test_loader,net,epoch,writer):
             
             if config['ocda_debug']:
                 break
-
+    
+    fpr, tpr, thresholds = metrics.roc_curve(label_lst, predict_lst, pos_label=0)
+    auc=metrics.auc(fpr, tpr)
     tp, fp, tn, fn=perf_measure(label_lst,predict_lst)
     fpr=fp/(tn+fp) # False rejection rate
     fnr=fn/(tp+fn) # false acceptance rate
@@ -146,12 +150,13 @@ def eval2(config,val_test_loader,tgt_test_loader,net,epoch,writer):
     writer.add_scalar(evaluation_set+'/Test_HTER', hter, epoch+1)
     writer.add_scalar(evaluation_set+'/Test_FPR', fpr, epoch+1)
     writer.add_scalar(evaluation_set+'/Test_FNR', fnr, epoch+1)
+    writer.add_scalar(evaluation_set+'/Test_AUC', auc, epoch+1)
     # f.write("HTER:{},FAR:{},FRR:{},thr:{}".format(hter,fpr,fnr,thrs))
     f.close()
 
     if 'f_summary_file' in config.keys():
         fsum=open(config["f_summary_file"],'a')
-        fsum.write("Test_HTER:{} Test_thrs:{} Test_FAR:{} Test_FRR:{}\n".format(hter,thrs,fpr,fnr))
+        fsum.write("Test_HTER:{} Test_thrs:{} Test_FAR:{} Test_FRR:{} Test_AUC:{}\n".format(hter,thrs,fpr,fnr,auc))
         fsum.close()
     return hter,acc
 
@@ -320,22 +325,24 @@ def eval_scheduled(config,val_test_loader,tgt_test_loader,net,domain_factor_net,
                     break
     f.close()
     fpr, tpr, thresholds = metrics.roc_curve(label_lst, predict_lst, pos_label=0)
+    auc=metrics.auc(fpr, tpr)
     fnr=1-tpr
     diff=np.absolute(fpr-fnr)
     idx=diff.argmin()
     thrs=thresholds[idx]
     hter=(fpr[idx]+fnr[idx])/2
-    print("Val :: HTER :{} Threshold:{} idx:{} FAR:{} FRR:{}".format(hter, thrs,idx,fpr[idx],fnr[idx]))
+    print("Val :: HTER :{} Threshold:{} idx:{} FAR:{} FRR:{} AUC:{}".format(hter, thrs,idx,fpr[idx],fnr[idx],auc))
     
     writer.add_scalar(evaluation_set+'/Val_HTER', hter, epoch+1)
     writer.add_scalar(evaluation_set+'/Val_eer_thr', thrs, epoch+1)
     writer.add_scalar(evaluation_set+'/Val_FPR', fpr[idx], epoch+1)
     writer.add_scalar(evaluation_set+'/Val_FNR', fnr[idx], epoch+1)
+    writer.add_scalar(evaluation_set+'/Val_auc', auc, epoch+1)
 
     if 'f_summary_file' in config.keys():
         fsum=open(config["f_summary_file"],'a')
         fsum.write("\nEpoch:{}\n".format(epoch+1))
-        fsum.write("Val_HTER:{} Val_thrs:{} Val_FAR:{} Val_FRR:{} idx:{}\n".format(hter, thrs,fpr[idx],fnr[idx],idx))
+        fsum.write("Val_HTER:{} Val_thrs:{} Val_FAR:{} Val_FRR:{} idx:{} Val_auc\n".format(hter, thrs,fpr[idx],fnr[idx],idx,auc))
         fsum.close()
         
     ################### TEST Dataset ######################
@@ -388,23 +395,27 @@ def eval_scheduled(config,val_test_loader,tgt_test_loader,net,domain_factor_net,
             if config['ocda_debug']:
                 break
 
+    fpr, tpr, thresholds = metrics.roc_curve(label_lst, predict_lst, pos_label=0)
+    auc=metrics.auc(fpr, tpr)
+
     tp, fp, tn, fn=perf_measure(label_lst,predict_lst)
     fpr=fp/(tn+fp) # False rejection rate
     fnr=fn/(tp+fn) # false acceptance rate
     
     hter= (fpr+fnr)/2
     acc=(tp+tn)/(tp+fp+tn+fn)
-    print("Test :: HTER :{} FAR:{} FRR:{}".format(hter,fpr,fnr))
+    print("Test :: HTER :{} FAR:{} FRR:{} AUC:{}".format(hter,fpr,fnr,auc))
 
     writer.add_scalar(evaluation_set+'/Test_HTER', hter, epoch+1)
     writer.add_scalar(evaluation_set+'/Test_FPR', fpr, epoch+1)
     writer.add_scalar(evaluation_set+'/Test_FNR', fnr, epoch+1)
+    writer.add_scalar(evaluation_set+'/Test_AUC', auc, epoch+1)
     # f.write("HTER:{},FAR:{},FRR:{},thr:{}".format(hter,fpr,fnr,thrs))
     f.close()
 
     if 'f_summary_file' in config.keys():
         fsum=open(config["f_summary_file"],'a')
-        fsum.write("Test_HTER:{} Test_thrs:{} Test_FAR:{} Test_FRR:{}\n".format(hter,thrs,fpr,fnr))
+        fsum.write("Test_HTER:{} Test_thrs:{} Test_FAR:{} Test_FRR:{} Test_AUC:{}\n".format(hter,thrs,fpr,fnr,auc))
         fsum.close()
     return hter,acc
 

@@ -273,21 +273,22 @@ src_net:
 mann_net:
   src_dataset: MsCaOu
   tgt_dataset: Ce
-  pretrained: 'dg' # options: 'src_net' or 'dg'
+  pretrained: 'src_net' # options: 'src_net' or 'dg'
   batch_size_tgt: 16
   batch_size_tgt_test: 32
   batch_size_src: 16
   batch_size_src_test: 32
   discrim_feat: False # for deciding input to discriminator
-  lr: 0.000001
-  centroid_fname: 'centroids_dg.npy'
+  lr: 0.00001
+  centroid_fname: 'centroids_src.npy'
   epochs: 5
   beta1: 0.9
   beta2: 0.999
   weight_decay: 0.00001
   feat_dim: 2048
-  discrim_thres: 0.4
-  eval_mem: True
+  discrim_thres: 0.5
+  eval_mem: False
+
   lr_scheduler:
       decay_iter: 1
       gamma: 0.9
@@ -302,7 +303,7 @@ domain_factor_net:
   batch_size_tgt_test: 32
   lr: 0.0001
   loss: sgd
-  centroid_fname: 'centroids_src.npy'
+  centroid_fname: 'centroids_dg.npy'
   epochs: 10
   beta1: 0.9
   beta2: 0.999
@@ -324,9 +325,9 @@ scheduled_mann_net:
   batch_size_src: 16
   batch_size_src_test: 32
   discrim_feat: False
-  discrim_thres: 0.5
+  discrim_thres: 0.4
   lr: 0.000001
-  centroid_fname: 'centroids_src.npy'
+  centroid_fname: 'centroids_dg.npy'
   epochs: 10
   beta1: 0.5
   beta2: 0.999
@@ -335,7 +336,6 @@ scheduled_mann_net:
   domain_factor_cond: 1
   gamma_dispell: 1
   gamma_rec: 10
-  fake_label_type: 'random'
   schedule_strategy: 'shift' #'expand'
   schedule_power: 0.5
   initial_ratio: 0.5
