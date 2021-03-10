@@ -331,7 +331,7 @@ def eval_scheduled(config,val_test_loader,tgt_test_loader,net,domain_factor_net,
     idx=diff.argmin()
     thrs=thresholds[idx]
     hter=(fpr[idx]+fnr[idx])/2
-    print("Val :: HTER :{} Threshold:{} idx:{} FAR:{} FRR:{} AUC:{}".format(hter, thrs,idx,fpr[idx],fnr[idx],auc))
+    print("Val :: HTER :{} Threshold:{} idx:{} FAR:{} FRR:{} AUC:{}\n".format(hter, thrs,idx,fpr[idx],fnr[idx],auc))
     
     writer.add_scalar(evaluation_set+'/Val_HTER', hter, epoch+1)
     writer.add_scalar(evaluation_set+'/Val_eer_thr', thrs, epoch+1)
@@ -342,7 +342,7 @@ def eval_scheduled(config,val_test_loader,tgt_test_loader,net,domain_factor_net,
     if 'f_summary_file' in config.keys():
         fsum=open(config["f_summary_file"],'a')
         fsum.write("\nEpoch:{}\n".format(epoch+1))
-        fsum.write("Val_HTER:{} Val_thrs:{} Val_FAR:{} Val_FRR:{} idx:{} Val_auc\n".format(hter, thrs,fpr[idx],fnr[idx],idx,auc))
+        fsum.write("Val_HTER:{} Val_thrs:{} Val_FAR:{} Val_FRR:{} idx:{} Val_auc:{}\n".format(hter, thrs,fpr[idx],fnr[idx],idx,auc))
         fsum.close()
         
     ################### TEST Dataset ######################
@@ -404,7 +404,7 @@ def eval_scheduled(config,val_test_loader,tgt_test_loader,net,domain_factor_net,
     
     hter= (fpr+fnr)/2
     acc=(tp+tn)/(tp+fp+tn+fn)
-    print("Test :: HTER :{} FAR:{} FRR:{} AUC:{}".format(hter,fpr,fnr,auc))
+    print("Test :: HTER :{} FAR:{} FRR:{} AUC:{}\n".format(hter,fpr,fnr,auc))
 
     writer.add_scalar(evaluation_set+'/Test_HTER', hter, epoch+1)
     writer.add_scalar(evaluation_set+'/Test_FPR', fpr, epoch+1)

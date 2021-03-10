@@ -63,7 +63,7 @@ for batchidx, ((src_images,src_p,src_labels),(tgt_images,tgt_p,tgt_labels)) in e
                         label_img=images_tsv,
                         global_step=3)
         break
-    src_images[0].show()
+    # src_images[0].show()
     # for i in range(src_images.shape[0]):
     #     im=transforms.ToPILImage(mode='RGB')(src_images[i])
     #     im.save("image.png")

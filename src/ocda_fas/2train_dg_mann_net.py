@@ -177,8 +177,13 @@ def train_epoch(config,loader_src, loader_tgt, net, opt_net, opt_dis, opt_select
             
             # compute loss for target network
             loss_gan_t = net.gan_criterion(pred_tgt, label_tgt)
-            loss_gan_t.backward()
-
+            loss_total=loss_gan_t
+            # Shannon entropy
+            if config['mann_net']['entropy']:
+                loss_shannon_entropy=torch.sum(torch.distributions.Categorical(probs=prob_t).entropy())
+                loss_total+=loss_shannon_entropy
+            
+            loss_total.backward()
             # optimize tgt network
             opt_net.step()
             opt_selector.step()
@@ -256,13 +261,13 @@ def train_mann_multi(args):
 
     tgt_test_loader=domain_combined_data_loaders(config,configdl,target_domain_list,mode='test',net='mann_net',type='tgt')
 
-    src_val_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='val',net='mann_net',type='src')
+    # src_val_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='val',net='mann_net',type='src')
 
-    src_test_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='test',net='mann_net',type='src')
+    # src_test_loader=domain_combined_data_loaders(config,configdl,source_domain_list,mode='test',net='mann_net',type='src')
 
-    # if (len(src_data_loader.dataset)/ len(tgt_train_loader.dataset)< 0.7):
-    #     comb_dataset = torch.utils.data.ConcatDataset([src_data_loader.dataset,src_data_loader.dataset])
-    #     src_data_loader = torch.utils.data.DataLoader(comb_dataset, batch_size=config['mann_net']['batch_size_src'], shuffle=True,drop_last=True,num_workers=config['num_workers'])
+    if (len(src_data_loader.dataset)/ len(tgt_train_loader.dataset)< 0.7):
+        comb_dataset = torch.utils.data.ConcatDataset([src_data_loader.dataset,src_data_loader.dataset])
+        src_data_loader = torch.utils.data.DataLoader(comb_dataset, batch_size=config['mann_net']['batch_size_src'], shuffle=True,drop_last=True,num_workers=config['num_workers'])
 
     # Target test Data loaders
     
@@ -333,11 +338,11 @@ def train_mann_multi(args):
     writer = SummaryWriter(tnsrboard_path)
 
     if config['eval']:
-        hter,acc=eval_dg(config,src_val_loader,src_test_loader,net,-1,writer)
+        hter,acc=eval_dg(config,tgt_val_loader,tgt_test_loader,net,-1,writer)
         print("Epoch {} HTER {}  acc {}".format(-1,hter,acc))
 
     else:
-    # initial Evaluation 
+    #initial Evaluation 
         hter,acc=eval2(config,tgt_val_loader,tgt_test_loader,net,-1,writer)
         print("Epoch {} HTER {}  acc {}".format(-1,hter,acc))
     
@@ -351,10 +356,10 @@ def train_mann_multi(args):
             if err == -1:
                 print("No suitable discriminator")
 
-            scheduler_net.step()
-            scheduler_dis.step()
-            scheduler_classifier.step()
-            scheduler_sel.step()
+            # scheduler_net.step()
+            # scheduler_dis.step()
+            # scheduler_classifier.step()
+            # scheduler_sel.step()
 
             ##############
             # Save Model #
@@ -370,16 +375,20 @@ def train_mann_multi(args):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--net_type', type=str, default='lstmmot')
-    parser.add_argument('--debug', type=bool, default=False)
-    # parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
+    parser.add_argument('--debug', type=bool, default=True)
+    
     parser.add_argument('--experiment_path', type=str, default='output/fas_project/ocda_exp')
-    parser.add_argument('--src_checkpoint_file', type=str, default='ocda_expand_improve/src_net/src_net_exp_000/checkpoints/src_net_MsCaOu_epoch05.pt')
+    parser.add_argument('--src_checkpoint_file', type=str, default='ocda_rev/src_net/src_net_exp_000/checkpoints/src_net_Ce_epoch05.pt')
+    parser.add_argument('--mannnet_outpath', type=str, default='ocda_rev/mann_net')
+    parser.add_argument('--centroids_path', type=str, default='ocda_rev/src_net/src_net_exp_000')
+
+    # parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_013')
     # parser.add_argument('--src_checkpoint_file', type=str, default='ocda_fas_files/src_net/src_net_exp_001/checkpoints/src_net_MsCaOu_epoch05.pt')
-    parser.add_argument('--mannnet_outpath', type=str, default='ocda_expand_improve/mann_net')
     # parser.add_argument('--mannnet_outpath', type=str, default='ocda_fas_files/mann_net')
-    parser.add_argument('--centroids_path', type=str, default='ocda_expand_improve/src_net/src_net_exp_000')
+    # parser.add_argument('--centroids_path', type=str, default='ocda_fas_files/src_net/src_net_exp_001')
+    
     parser.add_argument('--eval', type=bool, default=False)
-    parser.add_argument('--comments', type=str, default='Train with 0.5 acc thres lr 10-5 without mem')
+    parser.add_argument('--comments', type=str, default='Train with 0.4 acc (mulitfold)thres lr 10-6(no decay) with mem')
 
     args = parser.parse_args()
     train_mann_multi(args)

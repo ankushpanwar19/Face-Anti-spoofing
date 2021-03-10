@@ -44,8 +44,8 @@ if __name__ == "__main__":
     parser.add_argument('--net_type', type=str, default='lstmmot')
     parser.add_argument('--debug', type=bool, default=False)
     parser.add_argument('--experiment_path', type=str, default='output/fas_project/ocda_exp')
-    parser.add_argument('--score_files', type=str, default='ocda_expand_improve/mann_net/mann_net_exp_001/score_files')
-    parser.add_argument('--auc_summary', type=str, default='ocda_expand_improve/mann_net/mann_net_exp_001/auc_summary.txt')
+    parser.add_argument('--score_files', type=str, default='ocda_expand_improve/mann_net/mann_net_exp_007/score_files')
+    parser.add_argument('--auc_summary', type=str, default='ocda_expand_improve/mann_net/mann_net_exp_007/auc_summary.txt')
 
     parser.add_argument('--comments', type=str, default='Train with 0.5 acc thres lr 10-5 with mem')
 

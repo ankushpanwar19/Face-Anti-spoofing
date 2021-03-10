@@ -255,8 +255,8 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--net_type', type=str, default='lstmmot')
     parser.add_argument('--debug', type=bool, default=False)
-    parser.add_argument('--experiment_path', type=str, default='output/fas_project/DG_exp/lstmmot_exp_029')
-    parser.add_argument('--srcnet_outpath', type=str, default='ocda_fas_files/src_net')
+    parser.add_argument('--experiment_path', type=str, default='output/fas_project/ocda_exp')
+    parser.add_argument('--srcnet_outpath', type=str, default='ocda_rev/src_net')
 
     args = parser.parse_args()
     train_src_net(args)

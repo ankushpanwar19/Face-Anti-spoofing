@@ -255,8 +255,8 @@ transforms:
 
 # ******** OCDA Configs #########
 src_net:
-  src_dataset: MsCaRa
-  tgt_dataset: MsCaRa
+  src_dataset: Ce
+  tgt_dataset: Ce
   batch_size_src: 16
   batch_size_src_test: 32
   lr: 0.0001
@@ -271,23 +271,24 @@ src_net:
 
 # ---- target set Mann net ------
 mann_net:
-  src_dataset: MsCaOu
-  tgt_dataset: Ce
+  src_dataset: Ce
+  tgt_dataset: MsCaOu
   pretrained: 'src_net' # options: 'src_net' or 'dg'
   batch_size_tgt: 16
   batch_size_tgt_test: 32
   batch_size_src: 16
   batch_size_src_test: 32
   discrim_feat: False # for deciding input to discriminator
-  lr: 0.00001
+  lr: 0.000001
   centroid_fname: 'centroids_src.npy'
   epochs: 5
   beta1: 0.9
   beta2: 0.999
   weight_decay: 0.00001
   feat_dim: 2048
-  discrim_thres: 0.5
-  eval_mem: False
+  discrim_thres: 0.3
+  eval_mem: True
+  entropy: True
 
   lr_scheduler:
       decay_iter: 1
